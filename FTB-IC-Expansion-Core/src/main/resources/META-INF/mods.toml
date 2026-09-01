@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="[43,)"
+license="All rights reserved"
+[[mods]]
+modId="ftbicec"
+version="1.0.11"
+displayName="Industrial Contraptions Expansion: Core"
+authors="JohnyJohnyYesPapa"
+description='''
+An addon for FTB Industrial Contraptions, this mod acts as a base for other expansion mods.
+'''
+
+[[dependencies.ftbicec]]
+modId="forge"
+mandatory=true
+versionRange="[43,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ftbicec]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.19.2,1.20)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ftbicec]]
+modId="patchouli"
+mandatory=true
+versionRange="[1.19.2,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.ftbicec]]
+modId="ftbic"
+mandatory=true
+versionRange="[1900,)"
+ordering="AFTER"
+side="BOTH"
+

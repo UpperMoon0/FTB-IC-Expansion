@@ -1,0 +1,5 @@
+{
+  "name": "Industrious Instructions",
+  "landing_text": "The guidebook to $(major)FTB Industrial Contraptions$()!",
+  "extend": "ftbic:ftbic_guide"
+}

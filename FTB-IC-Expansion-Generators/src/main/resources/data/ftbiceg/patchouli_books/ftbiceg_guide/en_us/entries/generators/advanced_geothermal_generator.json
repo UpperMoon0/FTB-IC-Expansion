@@ -1,0 +1,17 @@
+{
+  "name":"Advanced Geothermal Generator",
+  "icon":"ftbiceg:advanced_geothermal_generator",
+  "category":"ftbic:generators",
+  "sortnum":6,
+  "pages":[
+    {
+      "type":"patchouli:text",
+      "text":"The $(item)Advanced Geothermal Generator$() is an upgraded version of the $(l:ftbic:generators/geothermal)Geothermal Generator$()."
+    },
+    {
+      "type":"patchouli:spotlight",
+      "item":"ftbiceg:advanced_geothermal_generator",
+      "text":"It generates 60⚡/t but also consumes lava 3 times faster.$(br2)The $(item)Advanced Geothermal Generator$() is MV."
+    }
+  ]
+}
