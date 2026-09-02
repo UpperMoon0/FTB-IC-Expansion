@@ -15,6 +15,7 @@ public final class FTBICEG {
         ICEGRegistries.BLOCKS.register(eventBus);
         ICEGRegistries.ITEMS.register(eventBus);
         ICEGRegistries.BLOCK_ENTITIES.register(eventBus);
+        ICEGRegistries.TABS.register(eventBus);
         container.registerConfig(ModConfig.Type.COMMON, ICEGConfig.COMMON_SPEC);
     }
 }

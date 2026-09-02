@@ -6,11 +6,15 @@ import com.jjyp.ftbiceg.block.AdvancedGeothermalGeneratorBlock;
 import com.jjyp.ftbiceg.block.entity.AdvancedGeneratorBlockEntity;
 import com.jjyp.ftbiceg.block.entity.AdvancedGeothermalGeneratorBlockEntity;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -25,6 +29,8 @@ public final class ICEGRegistries {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(FTBICEG.MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, FTBICEG.MODID);
+    public static final DeferredRegister<CreativeModeTab> TABS =
+        DeferredRegister.create(Registries.CREATIVE_MODE_TAB, FTBICEG.MODID);
 
     public static final DeferredBlock<AdvancedGeneratorBlock> ADVANCED_GENERATOR = BLOCKS.register(
         "advanced_generator",
@@ -53,8 +59,22 @@ public final class ICEGRegistries {
         () -> new BlockEntityType<>(AdvancedGeothermalGeneratorBlockEntity::new, Set.of(ADVANCED_GEOTHERMAL_GENERATOR.get()))
     );
 
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register(
+        "ftbiceg",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.ftbiceg"))
+            .icon(() -> new ItemStack(ADVANCED_GENERATOR_ITEM.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ADVANCED_GENERATOR_ITEM.get());
+                output.accept(ADVANCED_GEOTHERMAL_GENERATOR_ITEM.get());
+            })
+            .build()
+    );
+
     private static BlockBehaviour.Properties blockProperties(Identifier name) {
-        return BlockBehaviour.Properties.of().setId(ResourceKey.create(Registries.BLOCK, name));
+        return BlockBehaviour.Properties.of()
+            .setId(ResourceKey.create(Registries.BLOCK, name))
+            .sound(SoundType.METAL);
     }
 
     private static Item.Properties itemProperties(Identifier name) {
