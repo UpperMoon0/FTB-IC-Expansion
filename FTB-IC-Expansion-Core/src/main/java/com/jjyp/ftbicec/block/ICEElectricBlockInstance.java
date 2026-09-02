@@ -1,9 +1,11 @@
 package com.jjyp.ftbicec.block;
 
+import com.jjyp.ftbicec.FTBICEC;
 import com.jjyp.ftbicec.block.entity.ICEBlockEntities;
 import com.jjyp.ftbicec.item.ICEItems;
 import dev.ftb.mods.ftblibrary.snbt.config.DoubleValue;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -37,7 +39,11 @@ public class ICEElectricBlockInstance {
     public int outputItemCount;
     public boolean tickClientSide;
 
-    public ICEElectricBlockInstance(String i, BlockEntityType.BlockEntitySupplier<BlockEntity> blockEntitySupplier, String mod_id) {
+    public ICEElectricBlockInstance(String id, BlockEntityType.BlockEntitySupplier<BlockEntity> blockEntitySupplier, String modId) {
+        this(id, blockEntitySupplier, modId, FTBICEC.TAB);
+    }
+
+    public ICEElectricBlockInstance(String id, BlockEntityType.BlockEntitySupplier<BlockEntity> blockEntitySupplier, String modId, CreativeModeTab tab) {
         this.facingProperty = BlockStateProperties.HORIZONTAL_FACING;
         this.noModel = false;
         this.canBeActive = true;
@@ -51,118 +57,37 @@ public class ICEElectricBlockInstance {
         this.inputItemCount = 0;
         this.outputItemCount = 0;
         this.tickClientSide = false;
-        this.id = i;
-        this.name = Arrays.stream(this.id.split("_")).map((s) -> {
-            char var10000 = Character.toUpperCase(s.charAt(0));
-            return "" + var10000 + s.substring(1);
-        }).collect(Collectors.joining(" "));
+        this.id = id;
+        this.name = Arrays.stream(id.split("_"))
+            .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1))
+            .collect(Collectors.joining(" "));
         this.block = ICEBlocks.register(id, () -> {
             current = this;
-            ICEElectricBlock b = new ICEElectricBlock(this);
+            ICEElectricBlock value = new ICEElectricBlock(this);
             current = null;
-            return b;
-        }, mod_id);
-        this.item = ICEItems.blockItem(this.id, this.block, mod_id);
-        this.blockEntity = ICEBlockEntities.register(this.id, blockEntitySupplier, this.block, mod_id);
+            return value;
+        }, modId);
+        this.item = ICEItems.blockItem(id, block, modId, tab);
+        this.blockEntity = ICEBlockEntities.register(id, blockEntitySupplier, block, modId);
     }
 
-    public ICEElectricBlockInstance advanced() {
-        this.advanced = true;
-        return this;
-    }
-
-    public ICEElectricBlockInstance name(String n) {
-        this.name = n;
-        return this;
-    }
-
-    public ICEElectricBlockInstance noRotation() {
-        this.facingProperty = null;
-        return this;
-    }
-
-    public ICEElectricBlockInstance rotate3D() {
-        this.facingProperty = BlockStateProperties.FACING;
-        return this;
-    }
-
-    public ICEElectricBlockInstance noModel() {
-        this.noModel = true;
-        return this;
-    }
-
-    public ICEElectricBlockInstance cantBeActive() {
-        this.canBeActive = false;
-        return this;
-    }
-
-    public ICEElectricBlockInstance canBurn() {
-        this.canBurn = true;
-        return this;
-    }
-
-    public ICEElectricBlockInstance maxEnergyOutput(Supplier<Double> d) {
-        this.maxEnergyOutput = d;
-        return this;
-    }
-
-    public ICEElectricBlockInstance maxEnergyOutput(DoubleValue d) {
-        Objects.requireNonNull(d);
-        this.maxEnergyOutput = d::get;
-        return this;
-    }
-
-    public ICEElectricBlockInstance energyCapacity(Supplier<Double> d) {
-        this.energyCapacity = d;
-        return this;
-    }
-
-    public ICEElectricBlockInstance energyCapacity(DoubleValue d) {
-        Objects.requireNonNull(d);
-        this.energyCapacity = d::get;
-        return this;
-    }
-
-    public ICEElectricBlockInstance energyUsage(Supplier<Double> d) {
-        this.energyUsage = d;
-        return this;
-    }
-
-    public ICEElectricBlockInstance energyUsage(DoubleValue d) {
-        Objects.requireNonNull(d);
-        this.energyUsage = d::get;
-        return this;
-    }
-
-    public ICEElectricBlockInstance maxEnergyInput(Supplier<Double> d) {
-        this.maxEnergyInput = d;
-        return this;
-    }
-
-    public ICEElectricBlockInstance maxEnergyInput(DoubleValue d) {
-        Objects.requireNonNull(d);
-        this.maxEnergyInput = d::get;
-        return this;
-    }
-
-    public ICEElectricBlockInstance wip() {
-        this.wip = true;
-        return this;
-    }
-
-    public ICEElectricBlockInstance energyUsageIsntPerTick() {
-        this.energyUsageIsPerTick = false;
-        return this;
-    }
-
-    public ICEElectricBlockInstance io(int inItems, int outItems) {
-        this.inputItemCount = inItems;
-        this.outputItemCount = outItems;
-        return this;
-    }
-
-    public ICEElectricBlockInstance tickClientSide() {
-        this.tickClientSide = true;
-        return this;
-    }
+    public ICEElectricBlockInstance advanced() { advanced = true; return this; }
+    public ICEElectricBlockInstance name(String value) { name = value; return this; }
+    public ICEElectricBlockInstance noRotation() { facingProperty = null; return this; }
+    public ICEElectricBlockInstance rotate3D() { facingProperty = BlockStateProperties.FACING; return this; }
+    public ICEElectricBlockInstance noModel() { noModel = true; return this; }
+    public ICEElectricBlockInstance cantBeActive() { canBeActive = false; return this; }
+    public ICEElectricBlockInstance canBurn() { canBurn = true; return this; }
+    public ICEElectricBlockInstance maxEnergyOutput(Supplier<Double> value) { maxEnergyOutput = value; return this; }
+    public ICEElectricBlockInstance maxEnergyOutput(DoubleValue value) { Objects.requireNonNull(value); maxEnergyOutput = value::get; return this; }
+    public ICEElectricBlockInstance energyCapacity(Supplier<Double> value) { energyCapacity = value; return this; }
+    public ICEElectricBlockInstance energyCapacity(DoubleValue value) { Objects.requireNonNull(value); energyCapacity = value::get; return this; }
+    public ICEElectricBlockInstance energyUsage(Supplier<Double> value) { energyUsage = value; return this; }
+    public ICEElectricBlockInstance energyUsage(DoubleValue value) { Objects.requireNonNull(value); energyUsage = value::get; return this; }
+    public ICEElectricBlockInstance maxEnergyInput(Supplier<Double> value) { maxEnergyInput = value; return this; }
+    public ICEElectricBlockInstance maxEnergyInput(DoubleValue value) { Objects.requireNonNull(value); maxEnergyInput = value::get; return this; }
+    public ICEElectricBlockInstance wip() { wip = true; return this; }
+    public ICEElectricBlockInstance energyUsageIsntPerTick() { energyUsageIsPerTick = false; return this; }
+    public ICEElectricBlockInstance io(int inItems, int outItems) { inputItemCount = inItems; outputItemCount = outItems; return this; }
+    public ICEElectricBlockInstance tickClientSide() { tickClientSide = true; return this; }
 }

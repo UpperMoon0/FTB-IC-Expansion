@@ -2,8 +2,6 @@ package com.jjyp.ftbicec.item;
 
 import com.jjyp.ftbicec.FTBICEC;
 import com.jjyp.ftbicec.block.ICEBlocks;
-import com.jjyp.ftbiceg.FTBICEG;
-import dev.ftb.mods.ftbic.block.FTBICBlocks;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -20,70 +18,30 @@ public interface ICEItems {
     DeferredRegister<Item> ICEG_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, "ftbiceg");
     DeferredRegister<Item> ICEOP_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, "ftbiceop");
 
-    List<DeferredRegister<?>> REGISTERS_LIST = List.of(
-            ICEG_REGISTRY,
-            ICEOP_REGISTRY,
-            ICEC_REGISTRY
-    );
+    List<DeferredRegister<?>> REGISTERS_LIST = List.of(ICEG_REGISTRY, ICEOP_REGISTRY, ICEC_REGISTRY);
 
-    Supplier<BlockItem> FIREBRICKS = blockItem("firebricks", ICEBlocks.FIREBRICKS, "ftbicec");
-    Supplier<BlockItem> LARGE_BLAST_FURNACE = blockItem("large_blast_furnace", ICEBlocks.LARGE_BLAST_FURNACE, "ftbicec");
-    static Supplier<Item> register(String id, Supplier<Item> item, String mod_id) {
-        System.out.println("Registering item: " + id + "; mod id: " + mod_id);
-        DeferredRegister<Item> REGISTRY;
+    Supplier<BlockItem> FIREBRICKS = blockItem("firebricks", ICEBlocks.FIREBRICKS, "ftbicec", FTBICEC.TAB);
+    Supplier<BlockItem> LARGE_BLAST_FURNACE = blockItem("large_blast_furnace", ICEBlocks.LARGE_BLAST_FURNACE, "ftbicec", FTBICEC.TAB);
 
-        switch (mod_id)
-        {
-            case "ftbiceg": {
-                if (ModList.get().isLoaded("ftbiceg")) {
-                    REGISTRY = ICEG_REGISTRY;
-                    break;
-                }
-            }
-            case "ftbiceop": {
-                if (ModList.get().isLoaded("ftbiceop")) {
-                    REGISTRY = ICEOP_REGISTRY;
-                    break;
-                }
-            }
-            default: {
-                REGISTRY = ICEC_REGISTRY;
-                break;
-            }
-        }
-
-        return REGISTRY.register(id, item);
+    static Supplier<Item> register(String id, Supplier<Item> item, String modId) {
+        return registry(modId).register(id, item);
     }
 
-    static Supplier<BlockItem> blockItem(String id, Supplier<Block> sup, String mod_id) {
-        System.out.println("Registering blockItem: " + id + "; mod id: " + mod_id);
+    static Supplier<BlockItem> blockItem(String id, Supplier<Block> block, String modId, CreativeModeTab tab) {
+        return registry(modId).register(id, () -> new BlockItem(block.get(), new Item.Properties().tab(tab)));
+    }
 
-        DeferredRegister<Item> REGISTRY;
-        CreativeModeTab TAB;
-
-        switch (mod_id)
-        {
-            case "ftbiceg": {
-                if (ModList.get().isLoaded("ftbiceg")) {
-                    REGISTRY = ICEG_REGISTRY;
-                    TAB = FTBICEG.TAB;
-                    break;
-                }
-            }
-            case "ftbiceop": {
-                if (ModList.get().isLoaded("ftbiceop")) {
-                    REGISTRY = ICEOP_REGISTRY;
-                    TAB = FTBICEC.TAB;
-                    break;
-                }
-            }
-            default: {
-                REGISTRY = ICEC_REGISTRY;
-                TAB = FTBICEC.TAB;
+    private static DeferredRegister<Item> registry(String modId) {
+        switch (modId) {
+            case "ftbiceg":
+                if (ModList.get().isLoaded("ftbiceg")) return ICEG_REGISTRY;
                 break;
-            }
+            case "ftbiceop":
+                if (ModList.get().isLoaded("ftbiceop")) return ICEOP_REGISTRY;
+                break;
+            default:
+                break;
         }
-
-        return REGISTRY.register(id, () -> new BlockItem(sup.get(), (new Item.Properties()).tab(TAB)));
+        return ICEC_REGISTRY;
     }
 }

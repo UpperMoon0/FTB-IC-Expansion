@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [gradle.properties]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ftb-ic-expansion-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect release version changes
+        id: versions
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
+          core="$(value core_version)"
+          generators="$(value generators_version)"
+          core_changed=false
+          generators_changed=false
+          if [[ -n "${BEFORE_SHA:-}" && ! "$BEFORE_SHA" =~ ^0+$ ]] && git cat-file -e "${BEFORE_SHA}:gradle.properties" 2>/dev/null; then
+            previous_core="$(git show "${BEFORE_SHA}:gradle.properties" | sed -n 's/^core_version[[:space:]]*=[[:space:]]*//p' | head -n1 | tr -d '\r' | xargs)"
+            previous_generators="$(git show "${BEFORE_SHA}:gradle.properties" | sed -n 's/^generators_version[[:space:]]*=[[:space:]]*//p' | head -n1 | tr -d '\r' | xargs)"
+            [[ "$core" != "$previous_core" ]] && core_changed=true
+            [[ "$generators" != "$previous_generators" ]] && generators_changed=true
+          fi
+          printf 'core=%s\ngenerators=%s\ncore_changed=%s\ngenerators_changed=%s\n' "$core" "$generators" "$core_changed" "$generators_changed" >> "$GITHUB_OUTPUT"
+      - name: Stop when no release version changed
+        if: steps.versions.outputs.core_changed != 'true' && steps.versions.outputs.generators_changed != 'true'
+        run: echo 'No release version changed; nothing to publish.'
+      - uses: actions/setup-java@v4
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+      - name: Build and verify every target
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        run: |
+          chmod +x gradlew legacy-1.19.2/gradlew
+          ./gradlew --no-daemon testAllVersions
+      - name: Publish changed modules to CurseForge
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        shell: bash
+        env:
+          CURSEFORGE_API_TOKEN: ${{ secrets.CURSEFORGE_API_TOKEN }}
+          CORE_CHANGED: ${{ steps.versions.outputs.core_changed }}
+          GENERATORS_CHANGED: ${{ steps.versions.outputs.generators_changed }}
+          CORE_VERSION: ${{ steps.versions.outputs.core }}
+          GENERATORS_VERSION: ${{ steps.versions.outputs.generators }}
+        run: |
+          set -euo pipefail
+          [[ -n "${CURSEFORGE_API_TOKEN:-}" ]] || { echo 'Missing CURSEFORGE_API_TOKEN' >&2; exit 1; }
+          available="$(curl --fail-with-body --silent --show-error --header "X-Api-Token: $CURSEFORGE_API_TOKEN" https://minecraft.curseforge.com/api/game/versions)"
+          upload() {
+            local project_id="$1" display="$2" jar="$3" mc="$4" loader="$5" java="$6"
+            [[ -f "$jar" ]] || { echo "Missing release JAR: $jar" >&2; exit 1; }
+            local tags
+            tags="$(jq -cn --arg mc "$mc" --arg loader "$loader" --arg java "$java" '[$mc,$loader,$java,"Client","Server"]')"
+            while IFS= read -r tag; do jq -e --arg tag "$tag" 'any(.[]; .name == $tag)' <<< "$available" >/dev/null || { echo "Unknown CurseForge tag: $tag" >&2; exit 1; }; done < <(jq -r '.[]' <<< "$tags")
+            local metadata response_file status response
+            metadata="$(jq -cn --arg name "$display" --argjson tags "$tags" '{changelog:"Automated release from the FTB IC Expansion multi-version workspace.",changelogType:"markdown",displayName:$name,gameVersionNames:$tags,releaseType:"release"}')"
+            response_file="$(mktemp)"
+            status="$(curl --silent --show-error --retry 4 --retry-max-time 90 --output "$response_file" --write-out '%{http_code}' --request POST --header "X-Api-Token: $CURSEFORGE_API_TOKEN" --form-string "metadata=$metadata" --form "file=@$jar" "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file")"
+            response="$(cat "$response_file")"; rm -f "$response_file"
+            if [[ "$status" =~ ^2 ]]; then echo "Published $jar"; elif grep -Eqi 'already|duplicate' <<< "$response"; then echo "Already published: $jar"; else echo "CurseForge upload failed ($status): $response" >&2; exit 1; fi
+          }
+          if [[ "$CORE_CHANGED" == true ]]; then
+            upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17'
+          fi
+          if [[ "$GENERATORS_CHANGED" == true ]]; then
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${GENERATORS_VERSION}.jar" 1.19.2 Forge 'Java 17'
+          fi
+          publish_modern="$(sed -n 's/^publish_26_1_2[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n1 | tr -d '\r' | xargs)"
+          if [[ "$publish_modern" == true && "$CORE_CHANGED" == true ]]; then
+            upload 857669 "ICEC ${CORE_VERSION} for MC 26.1.2" "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar" 26.1.2 NeoForge 'Java 25'
+          fi
+          if [[ "$publish_modern" == true && "$GENERATORS_CHANGED" == true ]]; then
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25'
+          fi
+      - name: Create Core GitHub release
+        if: steps.versions.outputs.core_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.versions.outputs.core }}
+        run: |
+          files=("FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${VERSION}.jar")
+          if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${VERSION}.jar"); fi
+          gh release create "core-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Core v${VERSION}" --generate-notes
+      - name: Create Generators GitHub release
+        if: steps.versions.outputs.generators_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.versions.outputs.generators }}
+        run: |
+          files=("FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${VERSION}.jar")
+          if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${VERSION}.jar"); fi
+          gh release create "generators-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Generators v${VERSION}" --generate-notes
