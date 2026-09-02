@@ -7,8 +7,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
-public class LargeBlastFurnaceScreen extends AbstractContainerScreen {
+public class LargeBlastFurnaceScreen extends AbstractContainerScreen<LargeBlastFurnaceMenu> {
     private static final ResourceLocation texture = new ResourceLocation("ftbicec", "textures/gui/large_blast_furnace.png");
+
     public LargeBlastFurnaceScreen(LargeBlastFurnaceMenu containerMenu, Inventory inventory, Component component) {
         super(containerMenu, inventory, component);
     }
@@ -21,7 +22,7 @@ public class LargeBlastFurnaceScreen extends AbstractContainerScreen {
     }
 
     @Override
-    protected void renderBg(PoseStack pose, float mouseX, int mouseY, int partialTick) {
+    protected void renderBg(PoseStack pose, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderTexture(0, texture);
