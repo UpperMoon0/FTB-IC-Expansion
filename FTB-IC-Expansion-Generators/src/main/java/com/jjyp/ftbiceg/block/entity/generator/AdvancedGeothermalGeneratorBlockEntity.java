@@ -40,11 +40,8 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
 
     public LazyOptional<?> getTankOptional() {
         if (this.tankOptional == null) {
-            this.tankOptional = LazyOptional.of(() -> {
-                return new AdvancedGeothermalGeneratorTank(this);
-            });
+            this.tankOptional = LazyOptional.of(() -> new AdvancedGeothermalGeneratorTank(this));
         }
-
         return this.tankOptional;
     }
 
@@ -54,7 +51,6 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
             this.tankOptional.invalidate();
             this.tankOptional = null;
         }
-
     }
 
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
@@ -62,14 +58,20 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
     }
 
     public void handleGeneration() {
-        if (this.energy < this.energyCapacity && this.fluidAmount > 0) {
-            this.energy += Math.min(this.energyCapacity - this.energy, this.maxEnergyOutput);
-            if (this.fluidAmount > 2)
-                this.fluidAmount -= (int) this.maxEnergyOutput / 20;
-            else this.fluidAmount = 0;
-            this.active = true;
+        if (this.energy >= this.energyCapacity || this.fluidAmount <= 0) {
+            return;
         }
 
+        double requested = Math.min(this.maxEnergyOutput, this.energyCapacity - this.energy);
+        int fluidCost = Math.max(1, (int) Math.ceil(requested / 20.0D));
+        fluidCost = Math.min(fluidCost, this.fluidAmount);
+        double produced = Math.min(requested, fluidCost * 20.0D);
+        if (produced > 0.0D) {
+            this.energy += produced;
+            this.fluidAmount -= fluidCost;
+            this.active = true;
+            this.setChanged();
+        }
     }
 
     public InteractionResult rightClick(Player player, InteractionHand hand, BlockHitResult hit) {
@@ -77,7 +79,6 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
             if (!this.level.isClientSide()) {
                 this.openMenu((ServerPlayer) player, (id, inventory) -> new AdvancedGeothermalGeneratorMenu(id, inventory, this));
             }
-
         }
         return InteractionResult.SUCCESS;
     }
