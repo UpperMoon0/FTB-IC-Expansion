@@ -9,32 +9,41 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-import static com.jjyp.ftbicec.block.LargeBlastFurnaceBlock.FACING;
-
 public class LargeBlastFurnaceBlockEntity extends BlockEntity {
-    private static int checkStructCD = 0;
+    private int checkStructCooldown = 0;
+    private boolean structureFormed = false;
+
     public LargeBlastFurnaceBlockEntity(BlockPos pos, BlockState state) {
         super(ICEBlockEntities.LARGE_BLAST_FURNACE.get(), pos, state);
     }
-    public static <T extends BlockEntity> void tick(Level level, BlockPos blockPos, BlockState blockState, T t) {
-        if (!level.isClientSide()) {
-            if (checkStructCD > 0)
-                checkStructCD--;
-            else {
-                if (MultiblockHelper.checkForMultiblock(level, blockPos, blockState, getPattern(), 2))
-                    System.out.println("Structure Formed " + blockState.getValue(FACING));
-                checkStructCD = 20;
-            }
+
+    public static <T extends BlockEntity> void tick(Level level, BlockPos blockPos, BlockState blockState, T blockEntity) {
+        if (level.isClientSide() || !(blockEntity instanceof LargeBlastFurnaceBlockEntity furnace)) {
+            return;
         }
+
+        if (furnace.checkStructCooldown > 0) {
+            furnace.checkStructCooldown--;
+            return;
+        }
+
+        boolean formed = MultiblockHelper.checkForMultiblock(level, blockPos, blockState, getPattern(), 2);
+        if (formed != furnace.structureFormed) {
+            furnace.structureFormed = formed;
+            furnace.setChanged();
+        }
+        furnace.checkStructCooldown = 20;
     }
 
-    private static Block[][][] getPattern()
-    {
-        Block a = ICEBlocks.FIREBRICKS.get(),
-              b = Blocks.AIR;
+    public boolean isStructureFormed() {
+        return structureFormed;
+    }
 
-        Block[][][] pattern =
-        {
+    private static Block[][][] getPattern() {
+        Block a = ICEBlocks.FIREBRICKS.get();
+        Block b = Blocks.AIR;
+
+        return new Block[][][] {
             {
                 {a, a, a},
                 {a, b, a},
@@ -56,7 +65,5 @@ public class LargeBlastFurnaceBlockEntity extends BlockEntity {
                 {a, a, a}
             }
         };
-
-        return pattern;
     }
 }

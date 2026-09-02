@@ -5,15 +5,23 @@ import com.jjyp.ftbicec.block.entity.LargeBlastFurnaceBlockEntity;
 import com.jjyp.ftbicec.screen.LargeBlastFurnaceMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.*;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -27,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class LargeBlastFurnaceBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+
     public LargeBlastFurnaceBlock() {
         super(Properties.of(Material.STONE).sound(SoundType.STONE).strength(2F, 6F).requiresCorrectToolForDrops());
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
@@ -42,7 +51,8 @@ public class LargeBlastFurnaceBlock extends BaseEntityBlock {
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
-    public RenderShape getRenderShape(BlockState p_48727_) {
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 
@@ -69,8 +79,14 @@ public class LargeBlastFurnaceBlock extends BaseEntityBlock {
 
     @Override
     public MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
-        return new SimpleMenuProvider( (containerId, playerInventory, player) -> new LargeBlastFurnaceMenu(containerId, playerInventory),
-                Component.translatable("menu.title.ftbicec.large_blast_furnace_title"));
+        return new SimpleMenuProvider(
+            (containerId, playerInventory, player) -> new LargeBlastFurnaceMenu(
+                containerId,
+                playerInventory,
+                ContainerLevelAccess.create(level, pos)
+            ),
+            Component.translatable("menu.title.ftbicec.large_blast_furnace_title")
+        );
     }
 
     @Override
