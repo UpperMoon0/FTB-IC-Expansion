@@ -53,6 +53,7 @@ dependencies {
     testImplementation enforcedPlatform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "net.neoforged:testframework:${rootProject.neoforge_version_26_1_2}"
+    testRuntimeOnly ftbicCoordinate
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
