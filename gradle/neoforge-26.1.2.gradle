@@ -33,15 +33,31 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods.getByName(project.expansion_mod_id)
+    }
 }
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+def ftbicCoordinate = "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+
 dependencies {
-    // Compile against the exact upstream FTBIC 26.1.2 release verified for this workspace.
-    compileOnly "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+    compileOnly ftbicCoordinate
+    localRuntime ftbicCoordinate
+
+    testImplementation enforcedPlatform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "net.neoforged:testframework:${rootProject.neoforge_version_26_1_2}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 tasks.withType(ProcessResources).configureEach {

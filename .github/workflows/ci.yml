@@ -13,25 +13,57 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-all-versions:
+  shared-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Make wrappers executable
-        run: chmod +x gradlew legacy-1.19.2/gradlew FTB-IC-Expansion-Core/gradlew FTB-IC-Expansion-Generators/gradlew
-      - name: Test and build all versions
-        run: ./gradlew --no-daemon testAllVersions
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Test shared code
+        run: ./gradlew --no-daemon :common:check --stacktrace
+
+  forge-1-19-2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build Forge 1.19.2
+        run: |
+          chmod +x legacy-1.19.2/gradlew
+          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: ftb-ic-expansion-jars
+          name: forge-1.19.2-jars
           if-no-files-found: error
           path: |
             FTB-IC-Expansion-Core/build/libs/*.jar
             FTB-IC-Expansion-Generators/build/libs/*.jar
+
+  neoforge-26-1-2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and runtime-smoke NeoForge 26.1.2
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon buildModern2612 --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neoforge-26.1.2-jars
+          if-no-files-found: error
+          path: |
             neoforge-26.1.2-core/build/libs/*.jar
             neoforge-26.1.2-generators/build/libs/*.jar
