@@ -63,11 +63,7 @@ dependencies {
     implementation fg.deobf('curse.maven:myrtrees-546151:4371268')
     implementation fg.deobf('curse.maven:ftbic-539097:4392862')
     implementation fg.deobf('curse.maven:patchouli-306770:4031402')
-    if (rootProject.findProject(':core') != null) {
-        implementation project(':core')
-    } else {
-        implementation fg.deobf('curse.maven:ftbicec-857669:4531025')
-    }
+    implementation project(':core')
 }
 
 tasks.named('processResources', ProcessResources).configure {
