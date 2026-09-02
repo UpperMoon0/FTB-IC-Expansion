@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-all-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make wrappers executable
+        run: chmod +x gradlew legacy-1.19.2/gradlew FTB-IC-Expansion-Core/gradlew FTB-IC-Expansion-Generators/gradlew
+      - name: Test and build all versions
+        run: ./gradlew --no-daemon testAllVersions
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ftb-ic-expansion-jars
+          if-no-files-found: error
+          path: |
+            FTB-IC-Expansion-Core/build/libs/*.jar
+            FTB-IC-Expansion-Generators/build/libs/*.jar
+            neoforge-26.1.2-core/build/libs/*.jar
+            neoforge-26.1.2-generators/build/libs/*.jar

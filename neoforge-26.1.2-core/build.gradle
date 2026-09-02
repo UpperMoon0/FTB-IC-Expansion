@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+ext.expansion_mod_id = 'ftbicec'
+ext.expansion_mod_name = 'FTB IC Expansion Core'
+ext.expansion_version = rootProject.core_version
+ext.expansion_archive_name = 'IC-Expansion-Core'
+ext.expansion_description = 'Shared core for the FTB Industrial Contraptions Expansion mods.'
+
+apply from: rootProject.file('gradle/neoforge-26.1.2.gradle')
+
+// Version-neutral code is compiled directly into Core on every supported Minecraft line.
+sourceSets.main.java.srcDir(rootProject.file('common/src/main/java'))
