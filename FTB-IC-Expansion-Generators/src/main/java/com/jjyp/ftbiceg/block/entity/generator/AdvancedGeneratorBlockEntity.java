@@ -41,10 +41,10 @@ public class AdvancedGeneratorBlockEntity extends LVGeneratorBlockEntity {
     public boolean isItemValid(int slot, @NotNull ItemStack stack) {
         if (slot != 0) {
             return false;
-        } else {
-            RecipeCache recipeCache = this.getRecipeCache();
-            return recipeCache != null && recipeCache.getBasicGeneratorFuelTicks(this.level, stack) > 0;
         }
+
+        RecipeCache recipeCache = this.getRecipeCache();
+        return recipeCache != null && recipeCache.getBasicGeneratorFuelTicks(this.level, stack) > 0;
     }
 
     public void handleGeneration() {
@@ -62,9 +62,12 @@ public class AdvancedGeneratorBlockEntity extends LVGeneratorBlockEntity {
         if (this.fuelTicks == 0 && this.energy < this.energyCapacity && !this.inputItems[0].isEmpty()) {
             RecipeCache recipeCache = this.getRecipeCache();
             if (recipeCache != null) {
-                this.maxFuelTicks = Math.round((float) recipeCache.getBasicGeneratorFuelTicks(this.level, this.inputItems[0]) / ((int) this.maxEnergyOutput / 10));
-                this.fuelTicks = this.maxFuelTicks;
-                if (this.maxFuelTicks > 0) {
+                int baseFuelTicks = recipeCache.getBasicGeneratorFuelTicks(this.level, this.inputItems[0]);
+                if (baseFuelTicks > 0) {
+                    double outputMultiplier = Math.max(0.1D, this.maxEnergyOutput / 10.0D);
+                    this.maxFuelTicks = Math.max(1, (int) Math.ceil(baseFuelTicks / outputMultiplier));
+                    this.fuelTicks = this.maxFuelTicks;
+
                     if (this.inputItems[0].getCount() == 1) {
                         this.inputItems[0] = this.inputItems[0].getCraftingRemainingItem();
                     } else {
@@ -76,12 +79,11 @@ public class AdvancedGeneratorBlockEntity extends LVGeneratorBlockEntity {
                 }
             }
         }
-
     }
 
     public InteractionResult rightClick(Player player, InteractionHand hand, BlockHitResult hit) {
         if (!this.level.isClientSide()) {
-            this.openMenu((ServerPlayer)player, (id, inventory) -> new AdvancedGeneratorMenu(id, inventory, this));
+            this.openMenu((ServerPlayer) player, (id, inventory) -> new AdvancedGeneratorMenu(id, inventory, this));
         }
 
         return InteractionResult.SUCCESS;
@@ -89,6 +91,8 @@ public class AdvancedGeneratorBlockEntity extends LVGeneratorBlockEntity {
 
     public void addSyncData(SyncedData data) {
         super.addSyncData(data);
-        data.addShort(SyncedData.BAR, () -> this.fuelTicks == 0 ? 0 : Mth.clamp(Mth.ceil((double)this.fuelTicks * 14.0 / (double)this.maxFuelTicks), 0, 14));
+        data.addShort(SyncedData.BAR, () -> this.fuelTicks == 0 || this.maxFuelTicks <= 0
+            ? 0
+            : Mth.clamp(Mth.ceil((double) this.fuelTicks * 14.0 / (double) this.maxFuelTicks), 0, 14));
     }
 }

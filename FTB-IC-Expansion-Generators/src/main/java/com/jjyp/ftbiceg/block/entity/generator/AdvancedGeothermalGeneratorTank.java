@@ -6,12 +6,12 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.IFluidTank;
 import org.jetbrains.annotations.NotNull;
 
-public class AdvancedGeothermalGeneratorTank implements IFluidHandler, IFluidTank{
-    private int FLUID_CAPACITY = 24000;
+public class AdvancedGeothermalGeneratorTank implements IFluidHandler, IFluidTank {
+    private static final int FLUID_CAPACITY = 24000;
     public final AdvancedGeothermalGeneratorBlockEntity generator;
 
-    public AdvancedGeothermalGeneratorTank(AdvancedGeothermalGeneratorBlockEntity g) {
-        this.generator = g;
+    public AdvancedGeothermalGeneratorTank(AdvancedGeothermalGeneratorBlockEntity generator) {
+        this.generator = generator;
     }
 
     public @NotNull FluidStack getFluid() {
@@ -34,31 +34,28 @@ public class AdvancedGeothermalGeneratorTank implements IFluidHandler, IFluidTan
         return 1;
     }
 
-    public @NotNull FluidStack getFluidInTank(int i) {
+    public @NotNull FluidStack getFluidInTank(int tank) {
         return this.getFluid();
     }
 
-    public int getTankCapacity(int i) {
+    public int getTankCapacity(int tank) {
         return FLUID_CAPACITY;
     }
 
-    public boolean isFluidValid(int i, @NotNull FluidStack fluidStack) {
+    public boolean isFluidValid(int tank, @NotNull FluidStack fluidStack) {
         return this.isFluidValid(fluidStack);
     }
 
     public int fill(FluidStack resource, IFluidHandler.FluidAction action) {
-        if (!resource.isEmpty() && this.isFluidValid(resource)) {
-            int filled = Math.min(this.getCapacity() - this.generator.fluidAmount, resource.getAmount());
-            if (filled > 0 && !action.simulate()) {
-                AdvancedGeothermalGeneratorBlockEntity var10000 = this.generator;
-                var10000.fluidAmount += filled;
-                this.generator.setChanged();
-            }
-
-            return filled;
-        } else {
+        if (resource.isEmpty() || !this.isFluidValid(resource)) {
             return 0;
         }
+        int filled = Math.min(this.getCapacity() - this.generator.fluidAmount, resource.getAmount());
+        if (filled > 0 && !action.simulate()) {
+            this.generator.fluidAmount += filled;
+            this.generator.setChanged();
+        }
+        return filled;
     }
 
     public @NotNull FluidStack drain(int amount, IFluidHandler.FluidAction action) {

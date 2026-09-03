@@ -1,0 +1,33 @@
+plugins {
+    id 'base'
+    id 'net.neoforged.moddev' version '2.0.141' apply false
+}
+
+allprojects {
+    group = 'com.nstut.ftbice'
+}
+
+tasks.register('buildLegacy1192', Exec) {
+    group = 'build'
+    description = 'Builds the 1.19.2 Forge Core and Generators modules with their Gradle 7.5.1 workspace.'
+    workingDir rootProject.projectDir
+    commandLine './legacy-1.19.2/gradlew', '--no-daemon', '-p', 'legacy-1.19.2', 'build'
+}
+
+tasks.register('buildModern2612') {
+    group = 'build'
+    description = 'Builds both NeoForge 26.1.2 modules.'
+    dependsOn ':neoforge-26.1.2-core:build', ':neoforge-26.1.2-generators:build'
+}
+
+tasks.register('testAllVersions') {
+    group = 'verification'
+    description = 'Runs shared tests and builds every supported Minecraft target.'
+    dependsOn ':common:check', 'buildLegacy1192', 'buildModern2612'
+}
+
+tasks.register('buildAllVersions') {
+    group = 'build'
+    description = 'Alias for the full multi-version verification build.'
+    dependsOn 'testAllVersions'
+}

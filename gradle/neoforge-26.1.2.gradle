@@ -1,0 +1,83 @@
+version = project.expansion_version
+
+group = 'com.nstut.ftbice'
+base.archivesName = "${project.expansion_archive_name}-neoforge-${rootProject.minecraft_version_26_1_2}"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://www.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+neoForge {
+    version = rootProject.neoforge_version_26_1_2
+
+    runs {
+        client { client() }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.expansion_mod_id
+        }
+    }
+
+    mods {
+        "${project.expansion_mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+
+    unitTest {
+        enable()
+        testedMod = mods.getByName(project.expansion_mod_id)
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+def ftbicCoordinate = "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+
+dependencies {
+    compileOnly ftbicCoordinate
+    localRuntime ftbicCoordinate
+
+    testImplementation enforcedPlatform('org.junit:junit-bom:5.14.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "net.neoforged:testframework:${rootProject.neoforge_version_26_1_2}"
+    testRuntimeOnly ftbicCoordinate
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def replaceProperties = [
+        mod_id: project.expansion_mod_id,
+        mod_name: project.expansion_mod_name,
+        mod_version: project.expansion_version,
+        mod_description: project.expansion_description,
+        minecraft_version_range: rootProject.minecraft_version_range_26_1_2,
+        neo_version: rootProject.neoforge_version_26_1_2,
+        ftbic_version: rootProject.ftbic_version_26_1_2,
+        core_version: rootProject.core_version
+    ]
+    inputs.properties replaceProperties
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

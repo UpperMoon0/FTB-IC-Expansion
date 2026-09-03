@@ -3,7 +3,7 @@ loaderVersion="[43,)"
 license="All rights reserved"
 [[mods]]
 modId="ftbiceg"
-version="1.0.3"
+version="${mod_version}"
 displayName="Industrial Contraptions Expansion: Generators"
 authors="JohnyJohnyYesPapa"
 description='''
@@ -11,23 +11,22 @@ An addon for FTB Industrial Contraptions, this mod adds more generators to the g
 '''
 
 [[dependencies.ftbiceg]]
-    modId="forge"
-    mandatory=true
-    versionRange="[43,)"
-    ordering="NONE"
-    side="BOTH"
+modId="forge"
+mandatory=true
+versionRange="[43,)"
+ordering="NONE"
+side="BOTH"
 
 [[dependencies.ftbiceg]]
-    modId="minecraft"
-    mandatory=true
-    versionRange="[1.19.2,1.20)"
-    ordering="NONE"
-    side="BOTH"
+modId="minecraft"
+mandatory=true
+versionRange="[1.19.2,1.20)"
+ordering="NONE"
+side="BOTH"
 
 [[dependencies.ftbiceg]]
-    modId="ftbicec"
-    mandatory=true
-    versionRange="[1.0.10,)"
-    ordering="AFTER"
-    side="BOTH"
-
+modId="ftbicec"
+mandatory=true
+versionRange="[1.0.10,)"
+ordering="AFTER"
+side="BOTH"

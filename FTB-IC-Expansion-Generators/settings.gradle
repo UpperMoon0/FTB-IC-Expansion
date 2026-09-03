@@ -4,3 +4,7 @@ pluginManagement {
         maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
+
+rootProject.name = 'FTB-IC-Expansion-Generators'
+include ':core'
+project(':core').projectDir = file('../FTB-IC-Expansion-Core')

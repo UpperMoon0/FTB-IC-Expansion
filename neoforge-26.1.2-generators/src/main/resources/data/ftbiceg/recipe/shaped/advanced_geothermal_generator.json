@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": "ftbic:reinforced_glass",
+    "B": "ftbic:fluid_cell",
+    "C": "ftbic:advanced_circuit",
+    "D": "ftbic:advanced_machine_block",
+    "E": "ftbic:advanced_alloy",
+    "F": "ftbic:geothermal_generator"
+  },
+  "pattern": ["ABA", "CDC", "EFE"],
+  "result": { "id": "ftbiceg:advanced_geothermal_generator" },
+  "show_notification": false
+}

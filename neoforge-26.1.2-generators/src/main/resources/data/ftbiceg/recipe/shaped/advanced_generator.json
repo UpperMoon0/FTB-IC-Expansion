@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": "ftbic:copper_coil",
+    "B": "ftbic:mv_battery",
+    "C": "ftbic:advanced_circuit",
+    "D": "ftbic:advanced_machine_block",
+    "E": "ftbic:advanced_alloy",
+    "F": "ftbic:basic_generator"
+  },
+  "pattern": ["ABA", "CDC", "EFE"],
+  "result": { "id": "ftbiceg:advanced_generator" },
+  "show_notification": false
+}
