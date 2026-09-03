@@ -14,7 +14,6 @@ public interface ICEBlocks {
     DeferredRegister<Block> ICEG_REGISTRY = DeferredRegister.create(ForgeRegistries.BLOCKS, "ftbiceg");
 
     Supplier<Block> FIREBRICKS = ICEC_REGISTRY.register("firebricks", () -> new Block(BlockBehaviour.Properties.of(Material.STONE).sound(SoundType.STONE).strength(2F, 6F).requiresCorrectToolForDrops()));
-    Supplier<Block> LARGE_BLAST_FURNACE = ICEC_REGISTRY.register("large_blast_furnace", LargeBlastFurnaceBlock::new);
 
     static Supplier<Block> register(String id, Supplier<Block> block, String modId) {
         return registry(modId).register(id, block);

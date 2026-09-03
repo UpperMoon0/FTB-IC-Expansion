@@ -16,7 +16,6 @@ public interface ICEItems {
     DeferredRegister<Item> ICEG_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, "ftbiceg");
 
     Supplier<BlockItem> FIREBRICKS = blockItem("firebricks", ICEBlocks.FIREBRICKS, "ftbicec", FTBICEC.TAB);
-    Supplier<BlockItem> LARGE_BLAST_FURNACE = blockItem("large_blast_furnace", ICEBlocks.LARGE_BLAST_FURNACE, "ftbicec", FTBICEC.TAB);
 
     static Supplier<Item> register(String id, Supplier<Item> item, String modId) {
         return registry(modId).register(id, item);
