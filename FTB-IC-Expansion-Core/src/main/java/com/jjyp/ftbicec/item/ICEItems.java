@@ -1,7 +1,5 @@
 package com.jjyp.ftbicec.item;
 
-import com.jjyp.ftbicec.FTBICEC;
-import com.jjyp.ftbicec.block.ICEBlocks;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -14,8 +12,6 @@ import java.util.function.Supplier;
 public interface ICEItems {
     DeferredRegister<Item> ICEC_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, "ftbicec");
     DeferredRegister<Item> ICEG_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, "ftbiceg");
-
-    Supplier<BlockItem> FIREBRICKS = blockItem("firebricks", ICEBlocks.FIREBRICKS, "ftbicec", FTBICEC.TAB);
 
     static Supplier<Item> register(String id, Supplier<Item> item, String modId) {
         return registry(modId).register(id, item);
