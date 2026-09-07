@@ -68,7 +68,9 @@ public final class ICECRegistries {
     }
 
     private static Item.Properties itemProperties(Identifier name) {
-        return new Item.Properties().setId(ResourceKey.create(Registries.ITEM, name));
+        return new Item.Properties()
+            .setId(ResourceKey.create(Registries.ITEM, name))
+            .useBlockDescriptionPrefix();
     }
 
     private ICECRegistries() {

@@ -2,15 +2,20 @@ package com.jjyp.ftbiceg.block.entity;
 
 import com.jjyp.ftbicec.machine.ExpansionGeneratorBlockEntity;
 import com.jjyp.ftbiceg.ICEGConfig;
+import com.jjyp.ftbiceg.menu.AdvancedGeneratorMenu;
 import com.jjyp.ftbiceg.registry.ICEGRegistries;
 import dev.ftb.mods.ftbic.FTBICConfig;
 import dev.ftb.mods.ftbic.recipe.BasicGeneratorFuelRecipe;
 import dev.ftb.mods.ftbic.recipe.FTBICRecipes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -21,7 +26,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 
-public final class AdvancedGeneratorBlockEntity extends ExpansionGeneratorBlockEntity {
+public final class AdvancedGeneratorBlockEntity extends ExpansionGeneratorBlockEntity implements MenuProvider {
     private ItemStack fuel = ItemStack.EMPTY;
     private int fuelTicks;
     private int maxFuelTicks;
@@ -133,6 +138,16 @@ public final class AdvancedGeneratorBlockEntity extends ExpansionGeneratorBlockE
             return InteractionResult.SUCCESS;
         }
         return super.interactWithoutItem(player, hit);
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.ftbiceg.advanced_generator");
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new AdvancedGeneratorMenu(containerId, inventory, this);
     }
 
     public ItemStack getFuel() {

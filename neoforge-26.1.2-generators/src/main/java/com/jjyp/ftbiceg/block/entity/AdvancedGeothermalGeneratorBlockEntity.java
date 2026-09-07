@@ -2,14 +2,19 @@ package com.jjyp.ftbiceg.block.entity;
 
 import com.jjyp.ftbicec.machine.ExpansionGeneratorBlockEntity;
 import com.jjyp.ftbiceg.ICEGConfig;
+import com.jjyp.ftbiceg.menu.AdvancedGeothermalGeneratorMenu;
 import com.jjyp.ftbiceg.registry.ICEGRegistries;
 import dev.ftb.mods.ftbic.FTBICConfig;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,7 +22,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 
-public final class AdvancedGeothermalGeneratorBlockEntity extends ExpansionGeneratorBlockEntity {
+public final class AdvancedGeothermalGeneratorBlockEntity extends ExpansionGeneratorBlockEntity implements MenuProvider {
     private int fluidAmount;
 
     public AdvancedGeothermalGeneratorBlockEntity(BlockPos pos, BlockState state) {
@@ -72,6 +77,16 @@ public final class AdvancedGeothermalGeneratorBlockEntity extends ExpansionGener
         level.playSound(null, worldPosition, SoundEvents.BUCKET_EMPTY_LAVA, SoundSource.BLOCKS, 1F, 1F);
         setChanged();
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.ftbiceg.advanced_geothermal_generator");
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new AdvancedGeothermalGeneratorMenu(containerId, inventory, this);
     }
 
     public int getFluidAmount() {

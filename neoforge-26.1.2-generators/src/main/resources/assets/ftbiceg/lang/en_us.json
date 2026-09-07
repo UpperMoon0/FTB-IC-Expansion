@@ -2,8 +2,14 @@
   "block.ftbiceg.advanced_generator": "Advanced Generator",
   "block.ftbiceg.advanced_geothermal_generator": "Advanced Geothermal Generator",
   "itemGroup.ftbiceg": "IC Expansion: Generators",
-  "config.jade.plugin_ftbiceg.generator_status": "Generator Status",
   "ftbiceg.jade.energy": "Energy: %s / %s Zaps",
   "ftbiceg.jade.fuel": "Fuel: %s / %s ticks",
-  "ftbiceg.jade.lava": "Lava: %s / %s mB"
+  "ftbiceg.jade.lava": "Lava: %s / %s mB",
+  "config.jade.plugin_ftbiceg.generator_status": "Generator Status",
+  "gui.ftbiceg.energy": "Energy: %s / %s Zaps",
+  "gui.ftbiceg.fuel": "Fuel: %s / %s ticks",
+  "gui.ftbiceg.lava": "Lava: %s / %s mB",
+  "gui.ftbiceg.fuel_slot": "Fuel",
+  "gui.ftbiceg.battery_slot": "Battery",
+  "gui.ftbiceg.lava_hint": "Lava input: bucket or fluid pipe"
 }

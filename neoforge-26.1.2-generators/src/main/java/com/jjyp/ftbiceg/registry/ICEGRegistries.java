@@ -5,10 +5,13 @@ import com.jjyp.ftbiceg.block.AdvancedGeneratorBlock;
 import com.jjyp.ftbiceg.block.AdvancedGeothermalGeneratorBlock;
 import com.jjyp.ftbiceg.block.entity.AdvancedGeneratorBlockEntity;
 import com.jjyp.ftbiceg.block.entity.AdvancedGeothermalGeneratorBlockEntity;
+import com.jjyp.ftbiceg.menu.AdvancedGeneratorMenu;
+import com.jjyp.ftbiceg.menu.AdvancedGeothermalGeneratorMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -17,6 +20,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -29,6 +33,8 @@ public final class ICEGRegistries {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(FTBICEG.MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, FTBICEG.MODID);
+    public static final DeferredRegister<MenuType<?>> MENUS =
+        DeferredRegister.create(Registries.MENU, FTBICEG.MODID);
     public static final DeferredRegister<CreativeModeTab> TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, FTBICEG.MODID);
 
@@ -59,6 +65,15 @@ public final class ICEGRegistries {
         () -> new BlockEntityType<>(AdvancedGeothermalGeneratorBlockEntity::new, Set.of(ADVANCED_GEOTHERMAL_GENERATOR.get()))
     );
 
+    public static final DeferredHolder<MenuType<?>, MenuType<AdvancedGeneratorMenu>> ADVANCED_GENERATOR_MENU = MENUS.register(
+        "advanced_generator",
+        () -> IMenuTypeExtension.create((containerId, inventory, data) -> new AdvancedGeneratorMenu(containerId, inventory))
+    );
+    public static final DeferredHolder<MenuType<?>, MenuType<AdvancedGeothermalGeneratorMenu>> ADVANCED_GEOTHERMAL_GENERATOR_MENU = MENUS.register(
+        "advanced_geothermal_generator",
+        () -> IMenuTypeExtension.create((containerId, inventory, data) -> new AdvancedGeothermalGeneratorMenu(containerId, inventory))
+    );
+
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register(
         "ftbiceg",
         () -> CreativeModeTab.builder()
@@ -78,7 +93,9 @@ public final class ICEGRegistries {
     }
 
     private static Item.Properties itemProperties(Identifier name) {
-        return new Item.Properties().setId(ResourceKey.create(Registries.ITEM, name));
+        return new Item.Properties()
+            .setId(ResourceKey.create(Registries.ITEM, name))
+            .useBlockDescriptionPrefix();
     }
 
     private ICEGRegistries() {
