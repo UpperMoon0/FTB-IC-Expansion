@@ -60,6 +60,7 @@ dependencies {
     implementation fg.deobf('curse.maven:ftblib-404465:4500548')
     implementation fg.deobf('curse.maven:archi-419699:4476084')
     implementation fg.deobf('curse.maven:jei-238222:4494410')
+    implementation fg.deobf('curse.maven:jade-324717:4800904')
     implementation fg.deobf('curse.maven:myrtrees-546151:4371268')
     implementation fg.deobf('curse.maven:ftbic-539097:4392862')
     implementation fg.deobf('curse.maven:patchouli-306770:4031402')

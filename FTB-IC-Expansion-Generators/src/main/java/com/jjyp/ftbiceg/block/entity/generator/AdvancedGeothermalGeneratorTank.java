@@ -2,12 +2,12 @@ package com.jjyp.ftbiceg.block.entity.generator;
 
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.IFluidTank;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class AdvancedGeothermalGeneratorTank implements IFluidHandler, IFluidTank {
-    private static final int FLUID_CAPACITY = 24000;
+    public static final int FLUID_CAPACITY = 24000;
     public final AdvancedGeothermalGeneratorBlockEntity generator;
 
     public AdvancedGeothermalGeneratorTank(AdvancedGeothermalGeneratorBlockEntity generator) {

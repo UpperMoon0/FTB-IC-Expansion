@@ -25,13 +25,6 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.ftbicec]]
-modId="patchouli"
-mandatory=true
-versionRange="[1.19.2,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.ftbicec]]
 modId="ftbic"
 mandatory=true
 versionRange="[1900,)"

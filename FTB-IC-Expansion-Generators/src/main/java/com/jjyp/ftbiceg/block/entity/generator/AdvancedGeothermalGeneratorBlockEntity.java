@@ -1,7 +1,8 @@
 package com.jjyp.ftbiceg.block.entity.generator;
 
-import com.jjyp.ftbiceg.screen.AdvancedGeothermalGeneratorMenu;
 import com.jjyp.ftbiceg.block.entity.ICEGElectricBlocks;
+import com.jjyp.ftbiceg.screen.AdvancedGeothermalGeneratorMenu;
+import dev.ftb.mods.ftbic.FTBICConfig;
 import dev.ftb.mods.ftbic.screen.sync.SyncedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,6 +46,10 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
         return this.tankOptional;
     }
 
+    public int getTankCapacity() {
+        return AdvancedGeothermalGeneratorTank.FLUID_CAPACITY;
+    }
+
     public void invalidateCaps() {
         super.invalidateCaps();
         if (this.tankOptional != null) {
@@ -63,9 +68,10 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
         }
 
         double requested = Math.min(this.maxEnergyOutput, this.energyCapacity - this.energy);
-        int fluidCost = Math.max(1, (int) Math.ceil(requested / 20.0D));
+        double baseOutput = Math.max(0.1D, FTBICConfig.MACHINES.GEOTHERMAL_GENERATOR_OUTPUT.get());
+        int fluidCost = Math.max(1, (int) Math.ceil(requested / baseOutput));
         fluidCost = Math.min(fluidCost, this.fluidAmount);
-        double produced = Math.min(requested, fluidCost * 20.0D);
+        double produced = Math.min(requested, fluidCost * baseOutput);
         if (produced > 0.0D) {
             this.energy += produced;
             this.fluidAmount -= fluidCost;

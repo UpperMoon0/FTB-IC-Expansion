@@ -2,6 +2,7 @@ package com.jjyp.ftbiceg.block.entity.generator;
 
 import com.jjyp.ftbiceg.block.entity.ICEGElectricBlocks;
 import com.jjyp.ftbiceg.screen.AdvancedGeneratorMenu;
+import dev.ftb.mods.ftbic.FTBICConfig;
 import dev.ftb.mods.ftbic.recipe.RecipeCache;
 import dev.ftb.mods.ftbic.screen.sync.SyncedData;
 import dev.ftb.mods.ftbic.screen.sync.SyncedDataKey;
@@ -64,7 +65,8 @@ public class AdvancedGeneratorBlockEntity extends LVGeneratorBlockEntity {
             if (recipeCache != null) {
                 int baseFuelTicks = recipeCache.getBasicGeneratorFuelTicks(this.level, this.inputItems[0]);
                 if (baseFuelTicks > 0) {
-                    double outputMultiplier = Math.max(0.1D, this.maxEnergyOutput / 10.0D);
+                    double baseOutput = Math.max(0.1D, FTBICConfig.MACHINES.BASIC_GENERATOR_OUTPUT.get());
+                    double outputMultiplier = Math.max(0.1D, this.maxEnergyOutput / baseOutput);
                     this.maxFuelTicks = Math.max(1, (int) Math.ceil(baseFuelTicks / outputMultiplier));
                     this.fuelTicks = this.maxFuelTicks;
 
