@@ -1,6 +1,5 @@
 package com.jjyp.ftbicec.block;
 
-import com.jjyp.ftbicec.FTBICEC;
 import com.jjyp.ftbicec.block.entity.ICEBlockEntities;
 import com.jjyp.ftbicec.item.ICEItems;
 import dev.ftb.mods.ftblibrary.snbt.config.DoubleValue;
@@ -40,7 +39,7 @@ public class ICEElectricBlockInstance {
     public boolean tickClientSide;
 
     public ICEElectricBlockInstance(String id, BlockEntityType.BlockEntitySupplier<BlockEntity> blockEntitySupplier, String modId) {
-        this(id, blockEntitySupplier, modId, FTBICEC.TAB);
+        this(id, blockEntitySupplier, modId, null);
     }
 
     public ICEElectricBlockInstance(String id, BlockEntityType.BlockEntitySupplier<BlockEntity> blockEntitySupplier, String modId, CreativeModeTab tab) {
