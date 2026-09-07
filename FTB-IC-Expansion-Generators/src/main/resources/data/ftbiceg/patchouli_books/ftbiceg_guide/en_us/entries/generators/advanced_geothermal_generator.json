@@ -1,17 +1,30 @@
 {
-  "name":"Advanced Geothermal Generator",
-  "icon":"ftbiceg:advanced_geothermal_generator",
-  "category":"ftbic:generators",
-  "sortnum":6,
-  "pages":[
+  "name": "Advanced Geothermal Generator",
+  "icon": "ftbiceg:advanced_geothermal_generator",
+  "category": "ftbic:generators",
+  "sortnum": 6,
+  "pages": [
     {
-      "type":"patchouli:text",
-      "text":"The $(item)Advanced Geothermal Generator$() is an upgraded version of the $(l:ftbic:generators/geothermal)Geothermal Generator$()."
+      "type": "patchouli:text",
+      "text": "The $(item)Advanced Geothermal Generator$() is an MV throughput upgrade to the $(l:ftbic:generators/geothermal)Geothermal Generator$(). Its default output is $(thing)60⚡/t$()."
     },
     {
-      "type":"patchouli:spotlight",
-      "item":"ftbiceg:advanced_geothermal_generator",
-      "text":"It generates 60⚡/t but also consumes lava 3 times faster.$(br2)The $(item)Advanced Geothermal Generator$() is MV."
+      "type": "patchouli:spotlight",
+      "item": "ftbiceg:advanced_geothermal_generator",
+      "text": "It uses lava and has a 24,000 mB internal tank on the 1.19.2 implementation. At default balance it consumes lava about three times faster than the normal Geothermal Generator."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Lava consumption scales against FTBIC's configured Geothermal Generator output, preserving the intended energy-per-mB relationship when a pack changes upstream generator balance."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The generator can charge compatible FTBIC energy items. Jade can show stored energy and lava level, and normal recipe viewers can show its crafting recipe."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "ftbiceg:shaped/advanced_geothermal_generator",
+      "title": "Advanced Geothermal Generator"
     }
   ]
 }

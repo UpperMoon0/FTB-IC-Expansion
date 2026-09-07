@@ -1,17 +1,30 @@
 {
-  "name":"Advanced Generator",
-  "icon":"ftbiceg:advanced_generator",
-  "category":"ftbic:generators",
-  "sortnum":5,
-  "pages":[
+  "name": "Advanced Generator",
+  "icon": "ftbiceg:advanced_generator",
+  "category": "ftbic:generators",
+  "sortnum": 5,
+  "pages": [
     {
-      "type":"patchouli:text",
-      "text":"The $(item)Advanced Generator$() is an upgraded version of the $(l:ftbic:generators/basic)Basic Generator$()."
+      "type": "patchouli:text",
+      "text": "The $(item)Advanced Generator$() is an LV throughput upgrade to the $(l:ftbic:generators/basic)Basic Generator$(). Its default output is $(thing)30⚡/t$()."
     },
     {
-      "type":"patchouli:spotlight",
-      "item":"ftbiceg:advanced_generator",
-      "text":"It generates 30⚡/t but also consumes fuel 3 times faster.$(br2)The $(item)Advanced Generator$() is LV."
+      "type": "patchouli:spotlight",
+      "item": "ftbiceg:advanced_generator",
+      "text": "It accepts the same Basic Generator fuel recipes as FTB Industrial Contraptions. Fuels added to FTBIC through datapacks or other mods work here automatically; fuel is not hardcoded to coal."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Fuel duration scales against FTBIC's configured Basic Generator output. At default balance the Advanced Generator produces three times the power per tick and burns fuel three times faster, keeping approximately the same total energy per fuel item."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The generator can charge compatible FTBIC energy items and exposes its inventory to automation. JEI can show the related generator fuel recipes, while Jade can show stored energy and remaining fuel state."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "ftbiceg:shaped/advanced_generator",
+      "title": "Advanced Generator"
     }
   ]
 }

@@ -76,33 +76,35 @@ jobs:
           [[ -n "${CURSEFORGE_API_TOKEN:-}" ]] || { echo 'Missing CURSEFORGE_API_TOKEN' >&2; exit 1; }
           available="$(curl --fail-with-body --silent --show-error --header "X-Api-Token: $CURSEFORGE_API_TOKEN" https://minecraft.curseforge.com/api/game/versions)"
           upload() {
-            local project_id="$1" display="$2" jar="$3" mc="$4" loader="$5" java="$6" relations="$7"
+            local project_id="$1" display="$2" jar="$3" mc="$4" loader="$5" java="$6" relations="$7" changelog_file="$8"
             [[ -f "$jar" ]] || { echo "Missing release JAR: $jar" >&2; exit 1; }
-            local tags metadata response_file status response
+            [[ -f "$changelog_file" ]] || { echo "Missing release changelog: $changelog_file" >&2; exit 1; }
+            local tags changelog metadata response_file status response
             tags="$(jq -cn --arg mc "$mc" --arg loader "$loader" --arg java "$java" '[$mc,$loader,$java,"Client","Server"]')"
             while IFS= read -r tag; do jq -e --arg tag "$tag" 'any(.[]; .name == $tag)' <<< "$available" >/dev/null || { echo "Unknown CurseForge tag: $tag" >&2; exit 1; }; done < <(jq -r '.[]' <<< "$tags")
-            metadata="$(jq -cn --arg name "$display" --argjson tags "$tags" --argjson relations "$relations" '{changelog:"Automated release from the FTB IC Expansion multi-version workspace.",changelogType:"markdown",displayName:$name,gameVersionNames:$tags,releaseType:"release",relations:$relations}')"
+            changelog="$(cat "$changelog_file")"
+            metadata="$(jq -cn --arg name "$display" --arg changelog "$changelog" --argjson tags "$tags" --argjson relations "$relations" '{changelog:$changelog,changelogType:"markdown",displayName:$name,gameVersionNames:$tags,releaseType:"release",relations:$relations}')"
             response_file="$(mktemp)"
             status="$(curl --silent --show-error --retry 4 --retry-max-time 90 --output "$response_file" --write-out '%{http_code}' --request POST --header "X-Api-Token: $CURSEFORGE_API_TOKEN" --form-string "metadata=$metadata" --form "file=@$jar" "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file")"
             response="$(cat "$response_file")"; rm -f "$response_file"
             if [[ "$status" =~ ^2 ]]; then echo "Published $jar"; elif grep -Eqi 'already|duplicate' <<< "$response"; then echo "Already published: $jar"; else echo "CurseForge upload failed ($status): $response" >&2; exit 1; fi
           }
-          core_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"patchouli","type":"requiredDependency"}]}'
-          generators_legacy_relations='{"projects":[{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"}]}'
+          core_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"}]}'
+          generators_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
           core_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"}]}'
-          generators_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"}]}'
+          generators_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"guideme","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
           if [[ "$CORE_CHANGED" == true ]]; then
-            upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17' "$core_legacy_relations"
+            upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17' "$core_legacy_relations" "changelogs/core/v${CORE_VERSION}.md"
           fi
           if [[ "$GENERATORS_CHANGED" == true ]]; then
-            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${GENERATORS_VERSION}.jar" 1.19.2 Forge 'Java 17' "$generators_legacy_relations"
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${GENERATORS_VERSION}.jar" 1.19.2 Forge 'Java 17' "$generators_legacy_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
           fi
           publish_modern="$(sed -n 's/^publish_26_1_2[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n1 | tr -d '\r' | xargs)"
           if [[ "$publish_modern" == true && "$CORE_CHANGED" == true ]]; then
-            upload 857669 "ICEC ${CORE_VERSION} for MC 26.1.2" "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$core_modern_relations"
+            upload 857669 "ICEC ${CORE_VERSION} for MC 26.1.2" "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$core_modern_relations" "changelogs/core/v${CORE_VERSION}.md"
           fi
           if [[ "$publish_modern" == true && "$GENERATORS_CHANGED" == true ]]; then
-            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$generators_modern_relations"
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$generators_modern_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
           fi
       - name: Create Core GitHub release
         if: steps.versions.outputs.core_changed == 'true'
@@ -112,7 +114,7 @@ jobs:
         run: |
           files=("FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${VERSION}.jar")
           if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${VERSION}.jar"); fi
-          gh release create "core-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Core v${VERSION}" --generate-notes
+          gh release create "core-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Core v${VERSION}" --notes-file "changelogs/core/v${VERSION}.md"
       - name: Create Generators GitHub release
         if: steps.versions.outputs.generators_changed == 'true'
         env:
@@ -121,4 +123,4 @@ jobs:
         run: |
           files=("FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${VERSION}.jar")
           if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${VERSION}.jar"); fi
-          gh release create "generators-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Generators v${VERSION}" --generate-notes
+          gh release create "generators-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Generators v${VERSION}" --notes-file "changelogs/generators/v${VERSION}.md"

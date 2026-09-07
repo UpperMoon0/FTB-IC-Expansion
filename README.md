@@ -1,44 +1,134 @@
 # FTB IC Expansion
 
-Modern multi-version workspace for the legacy **FTB IC Expansion Core** and **FTB IC Expansion Generators** mods.
+![Minecraft](https://img.shields.io/badge/Minecraft-1.19.2%20%7C%2026.1.2-brightgreen)
+![Loaders](https://img.shields.io/badge/loaders-Forge%20%7C%20NeoForge-orange)
+![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-lightgrey)
 
-## Supported development targets
+**FTB IC Expansion** is a maintained addon suite for [FTB Industrial Contraptions](https://www.curseforge.com/minecraft/mc-mods/ftb-industrial-contraptions-forge), extending its machine ecosystem while preserving its energy network, fuel recipes, battery behavior, and pack configurability.
 
-| Target | Loader | Java | Status |
-| --- | --- | ---: | --- |
-| Minecraft 1.19.2 | Forge 43.2.8 | 17 | Legacy implementation / behavioral baseline |
-| Minecraft 26.1.2 | NeoForge 26.1.2.76 | 25 | Port workspace; loader shells compile and runtime-smoke while FTBIC-specific machine adapters are migrated |
+This repository contains two separately released mods:
 
-The repository originally targeted Minecraft **1.19.2**, not 1.18.2. The modern lane follows current NeoForge/ModDevGradle conventions and compiles against FTB Industrial Contraptions 26.1.2.10.
+- **Industrial Contraptions Expansion: Core** (`ftbicec`) — shared infrastructure used by the expansion modules.
+- **Industrial Contraptions Expansion: Generators** (`ftbiceg`) — upgraded fuel and geothermal generators built on top of Core and FTB Industrial Contraptions.
 
-## Layout
+## Supported targets
 
-- `common/` — version-neutral identifiers, rules and tests. Keep Minecraft/loader/FTBIC internals out of this module.
-- `FTB-IC-Expansion-Core/` — original Forge 1.19.2 Core implementation.
-- `FTB-IC-Expansion-Generators/` — original Forge 1.19.2 Generators implementation.
-- `legacy-1.19.2/` — Gradle 7.5.1 workspace that builds the two legacy projects together.
-- `neoforge-26.1.2-core/` — Core's NeoForge 26.1.2 adapter.
-- `neoforge-26.1.2-generators/` — Generators' NeoForge 26.1.2 adapter and runtime smoke test.
-- `gradle/neoforge-26.1.2.gradle` — shared 26.1.2 ModDevGradle convention.
+| Minecraft | Loader | Java | FTB Industrial Contraptions | Status |
+| :--- | :--- | ---: | :--- | :--- |
+| 1.19.2 | Forge 43.2.8 | 17 | Legacy 1.19.x line | Supported legacy implementation |
+| 26.1.2 | NeoForge 26.1.2.76 | 25 | 26.1.2.10 | Supported modern implementation |
 
-The root modern workspace uses Gradle 9.1.0. The isolated legacy workspace stays on Gradle 7.5.1 so ForgeGradle 5 is not forced onto an unsupported modern Gradle runtime.
+Install the file matching your exact Minecraft version and loader. Files from one target are not cross-version or cross-loader artifacts.
 
-## Build
+## Modules and dependencies
 
-For a local full verification from Java 17, run:
+### IC Expansion: Core
+
+Core is the common support layer for the suite. It provides the registry and machine compatibility infrastructure used by expansion modules.
+
+**Required:**
+
+- FTB Industrial Contraptions
+
+Core does **not** require Patchouli.
+
+### IC Expansion: Generators
+
+Generators adds the Advanced Generator and Advanced Geothermal Generator.
+
+**Required:**
+
+- FTB Industrial Contraptions
+- IC Expansion: Core
+
+JEI, Jade, Patchouli, and GuideME are integrations rather than hard requirements unless another installed mod or pack requires them independently.
+
+## Generator features
+
+### Advanced Generator
+
+- **30 Zap/t by default** and operates at LV.
+- Accepts the **same datapack-driven Basic Generator fuel recipes as FTB Industrial Contraptions**. It is not hardcoded to coal.
+- Fuel duration scales from the configured Basic Generator output. At default balance it produces three times the Basic Generator throughput and burns fuel three times faster, preserving approximately the same total energy per fuel item.
+- Pack-added or datapack-added FTBIC Basic Generator fuels work automatically.
+- Charges FTBIC-compatible energy items through its battery slot.
+- Exposes its fuel and battery inventory for automation.
+- Outputs into the FTBIC Zap network and follows FTBIC's FE conversion rules.
+
+### Advanced Geothermal Generator
+
+- **60 Zap/t by default** and operates at MV.
+- Uses lava, with consumption scaled against FTBIC's configured Geothermal Generator output so throughput changes do not silently create extra energy per mB.
+- Has a **24,000 mB default tank** on the modern target; the modern tank size is configurable.
+- Accepts direct lava-bucket interaction and exposes fluid automation on the modern NeoForge target.
+- Charges FTBIC-compatible energy items through its battery slot.
+- Outputs into the FTBIC Zap network and follows FTBIC's FE conversion rules.
+
+Default numbers describe the shipped configuration. Modpacks may tune generator output and modern storage values through config.
+
+## Optional integrations
+
+| Integration | Forge 1.19.2 | NeoForge 26.1.2 |
+| :--- | :--- | :--- |
+| JEI | Generator/fuel recipe integration | Generator/fuel recipe integration |
+| Jade | Energy, fuel and lava information | Energy, fuel and lava information |
+| Patchouli | Extends FTBIC's in-game guide | Compatibility-tested optional dependency |
+| GuideME | — | Extends FTBIC's current in-game guide |
+
+The 1.19.2 Patchouli pages and 26.1.2 GuideME pages document the same gameplay rules using the guide system native to that FTBIC generation.
+
+## Modpack compatibility
+
+Generators deliberately follows upstream FTBIC behavior instead of maintaining a separate hardcoded fuel list:
+
+- Advanced Generator fuel acceptance comes from FTBIC's Basic Generator fuel recipe type.
+- Fuel duration is derived from FTBIC's configured Basic Generator output.
+- Geothermal lava consumption is derived from FTBIC's configured Geothermal Generator output.
+- Energy output uses FTBIC Zap transport behavior and FE conversion rules.
+
+This means datapacks and packs that extend or rebalance FTBIC remain compatible without needing a second IC Expansion-specific fuel list.
+
+See [Compatibility](docs/COMPATIBILITY.md) for the version-by-version integration contract.
+
+## In-game documentation
+
+- **1.19.2:** Generators extends FTB Industrial Contraptions' Patchouli guide with Advanced Generator and Advanced Geothermal Generator entries.
+- **26.1.2:** Generators extends FTB Industrial Contraptions' GuideME guide with the corresponding modern pages.
+
+Recipes remain visible through normal recipe viewers, with dedicated JEI integration where available.
+
+## Repository layout
+
+- `common/` — version-neutral rules and tests.
+- `FTB-IC-Expansion-Core/` — Forge 1.19.2 Core implementation.
+- `FTB-IC-Expansion-Generators/` — Forge 1.19.2 Generators implementation.
+- `legacy-1.19.2/` — isolated Gradle 7.5.1 workspace for the legacy Forge projects.
+- `neoforge-26.1.2-core/` — NeoForge 26.1.2 Core adapter.
+- `neoforge-26.1.2-generators/` — NeoForge 26.1.2 Generators implementation and integrations.
+- `docs/` — development, compatibility, and porting documentation.
+- `curseforge/` — source-controlled project descriptions for the two CurseForge projects.
+- `changelogs/` — per-mod, per-release notes used by publishing automation.
+
+For architecture and migration rationale, see [Porting](docs/PORTING.md). For local builds, see [Development](docs/DEVELOPMENT.md).
+
+## Building and testing
+
+A full local verification can be started from the root workspace with:
 
 ```bash
 ./gradlew testAllVersions
 ```
 
-CI deliberately separates shared tests, Forge 1.19.2, and NeoForge 26.1.2 into independent jobs. The modern job runs on Java 25 and includes a lightweight ephemeral Minecraft server test that verifies FTBIC, Core, and Generators load together.
+The CI matrix validates shared code, Forge 1.19.2, and NeoForge 26.1.2 independently. The modern lane includes a real Minecraft server bootstrap with FTB Industrial Contraptions, Core, and Generators loaded together.
 
-## Porting rule
+Version numbers are owned by the root `gradle.properties`. Release notes for each changed module must exist at `changelogs/core/v<version>.md` or `changelogs/generators/v<version>.md`; release automation uses those files for CurseForge and GitHub release notes.
 
-Share stable behavior and data, not incompatible implementation details. The old Core reconstructs several FTBIC internals, and the 26.1.2 FTBIC API/registry model has materially changed. Minecraft/Forge/NeoForge and FTBIC adapter code therefore stays version-specific while constants, calculations and other loader-neutral behavior live in `common`.
+## Modpack use
 
-Each shipped mod owns its registry lifecycle. The dormant `ftbiceop` registry fallback from the legacy Core was removed because no corresponding module exists in this repository; unknown expansion mod IDs now fail fast instead of silently registering into Core.
+You may freely include IC Expansion mods in modpacks.
 
-## Publishing
+## Credits
 
-Version numbers live in root `gradle.properties`. CurseForge uploads include required-dependency relations. NeoForge 26.1.2 publishing remains gated by `publish_26_1_2=false` until machine feature parity is reached; CI still builds and boots the modern target so dependency/runtime drift is caught before publishing is enabled.
+Thanks to the **FTB Team** for creating **FTB Industrial Contraptions** and the ecosystem this addon extends.
+
+If you want to support the project, you can do so on [Patreon](https://patreon.com/FTBICExpansionMods).
