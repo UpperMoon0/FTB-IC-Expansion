@@ -56,7 +56,7 @@ public final class AdvancedGeothermalGeneratorBlockEntity extends ExpansionGener
     @Override
     public InteractionResult interactWithItem(Player player, InteractionHand hand, ItemStack stack, BlockHitResult hit) {
         if (!stack.is(Items.LAVA_BUCKET)) {
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return super.interactWithItem(player, hand, stack, hit);
         }
         if (fluidAmount + 1000 > getTankCapacity()) {
             return InteractionResult.PASS;

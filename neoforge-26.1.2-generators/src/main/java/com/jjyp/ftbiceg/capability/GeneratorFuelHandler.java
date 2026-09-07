@@ -7,7 +7,11 @@ import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
-public final class GeneratorFuelHandler extends SnapshotJournal<ItemStack> implements ResourceHandler<ItemResource> {
+/**
+ * Two-slot automation view matching the legacy/upstream generator shape:
+ * slot 0 = fuel, slot 1 = chargeable battery.
+ */
+public final class GeneratorFuelHandler extends SnapshotJournal<GeneratorFuelHandler.Snapshot> implements ResourceHandler<ItemResource> {
     private final AdvancedGeneratorBlockEntity blockEntity;
 
     public GeneratorFuelHandler(AdvancedGeneratorBlockEntity blockEntity) {
@@ -16,27 +20,50 @@ public final class GeneratorFuelHandler extends SnapshotJournal<ItemStack> imple
 
     @Override
     public int size() {
-        return 1;
+        return 2;
     }
 
     @Override
     public ItemResource getResource(int index) {
-        return index == 0 ? ItemResource.of(blockEntity.getFuel()) : ItemResource.EMPTY;
+        return switch (index) {
+            case 0 -> ItemResource.of(blockEntity.getFuel());
+            case 1 -> ItemResource.of(blockEntity.getChargeBattery());
+            default -> ItemResource.EMPTY;
+        };
     }
 
     @Override
     public long getAmountAsLong(int index) {
-        return index == 0 ? blockEntity.getFuel().getCount() : 0L;
+        return switch (index) {
+            case 0 -> blockEntity.getFuel().getCount();
+            case 1 -> blockEntity.getChargeBattery().getCount();
+            default -> 0L;
+        };
     }
 
     @Override
     public long getCapacityAsLong(int index, ItemResource resource) {
-        return index == 0 && !resource.isEmpty() ? Math.min(64, resource.getMaxStackSize()) : 0L;
+        if (resource.isEmpty()) {
+            return 0L;
+        }
+        return switch (index) {
+            case 0 -> Math.min(64, resource.getMaxStackSize());
+            case 1 -> 1L;
+            default -> 0L;
+        };
     }
 
     @Override
     public boolean isValid(int index, ItemResource resource) {
-        return index == 0 && !resource.isEmpty() && blockEntity.isFuel(resource.toStack(1));
+        if (resource.isEmpty()) {
+            return false;
+        }
+        ItemStack stack = resource.toStack(1);
+        return switch (index) {
+            case 0 -> blockEntity.isFuel(stack);
+            case 1 -> blockEntity.isChargeBattery(stack);
+            default -> false;
+        };
     }
 
     @Override
@@ -44,6 +71,16 @@ public final class GeneratorFuelHandler extends SnapshotJournal<ItemStack> imple
         if (!isValid(index, resource) || amount <= 0) {
             return 0;
         }
+
+        if (index == 1) {
+            if (!blockEntity.getChargeBattery().isEmpty()) {
+                return 0;
+            }
+            updateSnapshots(transaction);
+            blockEntity.setChargeBattery(resource.toStack(1));
+            return 1;
+        }
+
         ItemStack existing = blockEntity.getFuel();
         if (!existing.isEmpty() && !resource.matches(existing)) {
             return 0;
@@ -67,33 +104,45 @@ public final class GeneratorFuelHandler extends SnapshotJournal<ItemStack> imple
 
     @Override
     public int extract(int index, ItemResource resource, int amount, TransactionContext transaction) {
-        if (index != 0 || resource.isEmpty() || amount <= 0) {
+        if (resource.isEmpty() || amount <= 0) {
             return 0;
         }
-        ItemStack existing = blockEntity.getFuel();
+
+        ItemStack existing = index == 0 ? blockEntity.getFuel()
+            : index == 1 ? blockEntity.getChargeBattery()
+            : ItemStack.EMPTY;
         if (existing.isEmpty() || !resource.matches(existing)) {
             return 0;
         }
+
         int extracted = Math.min(amount, existing.getCount());
         updateSnapshots(transaction);
         ItemStack remaining = existing.copy();
         remaining.shrink(extracted);
-        blockEntity.setFuel(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
+        if (index == 0) {
+            blockEntity.setFuel(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
+        } else {
+            blockEntity.setChargeBattery(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
+        }
         return extracted;
     }
 
     @Override
-    protected ItemStack createSnapshot() {
-        return blockEntity.getFuel().copy();
+    protected Snapshot createSnapshot() {
+        return new Snapshot(blockEntity.getFuel().copy(), blockEntity.getChargeBattery().copy());
     }
 
     @Override
-    protected void revertToSnapshot(ItemStack snapshot) {
-        blockEntity.setFuel(snapshot.copy());
+    protected void revertToSnapshot(Snapshot snapshot) {
+        blockEntity.setFuel(snapshot.fuel().copy());
+        blockEntity.setChargeBattery(snapshot.battery().copy());
     }
 
     @Override
-    protected void onRootCommit(ItemStack originalState) {
+    protected void onRootCommit(Snapshot originalState) {
         blockEntity.setChanged();
+    }
+
+    record Snapshot(ItemStack fuel, ItemStack battery) {
     }
 }

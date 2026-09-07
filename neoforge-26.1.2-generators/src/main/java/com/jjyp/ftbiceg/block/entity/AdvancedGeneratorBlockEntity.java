@@ -97,7 +97,7 @@ public final class AdvancedGeneratorBlockEntity extends ExpansionGeneratorBlockE
     @Override
     public InteractionResult interactWithItem(Player player, InteractionHand hand, ItemStack stack, BlockHitResult hit) {
         if (!isFuel(stack)) {
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return super.interactWithItem(player, hand, stack, hit);
         }
         if (level == null || level.isClientSide()) {
             return InteractionResult.SUCCESS;

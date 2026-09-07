@@ -28,6 +28,7 @@ public final class ICEGCapabilities {
         event.registerBlockEntity(Capabilities.Energy.BLOCK, generatorType, (be, side) -> new ExpansionEnergyHandler(be));
         event.registerBlockEntity(Capabilities.Energy.BLOCK, geothermalType, (be, side) -> new ExpansionEnergyHandler(be));
         event.registerBlockEntity(Capabilities.Item.BLOCK, generatorType, (be, side) -> new GeneratorFuelHandler(be));
+        event.registerBlockEntity(Capabilities.Item.BLOCK, geothermalType, (be, side) -> new GeneratorBatteryHandler(be));
         event.registerBlockEntity(Capabilities.Fluid.BLOCK, geothermalType, (be, side) -> new AdvancedGeothermalTankHandler(be));
     }
 
