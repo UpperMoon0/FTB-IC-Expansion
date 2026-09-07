@@ -42,9 +42,10 @@ public final class AdvancedGeothermalGeneratorBlockEntity extends ExpansionGener
             return;
         }
 
-        int fluidCost = Math.max(1, (int) Math.ceil(produced / 20D));
+        double baseOutput = Math.max(0.1D, FTBICConfig.MACHINES.GEOTHERMAL_GENERATOR_OUTPUT.get());
+        int fluidCost = Math.max(1, (int) Math.ceil(produced / baseOutput));
         fluidCost = Math.min(fluidCost, fluidAmount);
-        double scaledProduction = Math.min(produced, fluidCost * 20D);
+        double scaledProduction = Math.min(produced, fluidCost * baseOutput);
         if (addEnergy(scaledProduction) > 0D) {
             fluidAmount -= fluidCost;
             markActive();

@@ -11,6 +11,13 @@ repositories {
         url = 'https://www.cursemaven.com'
         content { includeGroup 'curse.maven' }
     }
+    maven {
+        url = 'https://maven.blamejared.com/'
+        content {
+            includeGroup 'mezz.jei'
+            includeGroup 'vazkii.patchouli'
+        }
+    }
 }
 
 neoForge {
@@ -45,15 +52,35 @@ configurations {
 }
 
 def ftbicCoordinate = "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+def jeiApiCoordinate = "mezz.jei:jei-26.1.2-neoforge-api:${rootProject.jei_version_26_1_2}"
+def jeiRuntimeCoordinate = "mezz.jei:jei-26.1.2-neoforge:${rootProject.jei_version_26_1_2}"
+def jadeCoordinate = "curse.maven:jade-324717:${rootProject.jade_curse_file_26_1_2}"
+def guideMeApiCoordinate = "org.appliedenergistics:guideme:${rootProject.guideme_version_26_1_2}:api"
+def guideMeRuntimeCoordinate = "org.appliedenergistics:guideme:${rootProject.guideme_version_26_1_2}"
+def patchouliApiCoordinate = "vazkii.patchouli:patchouli-neoforge:${rootProject.patchouli_version_26_1_2}:api"
+def patchouliRuntimeCoordinate = "vazkii.patchouli:patchouli-neoforge:${rootProject.patchouli_version_26_1_2}"
 
 dependencies {
     compileOnly ftbicCoordinate
     localRuntime ftbicCoordinate
 
+    compileOnly jeiApiCoordinate
+    localRuntime jeiRuntimeCoordinate
+    compileOnly jadeCoordinate
+    localRuntime jadeCoordinate
+    compileOnly guideMeApiCoordinate
+    localRuntime guideMeRuntimeCoordinate
+    compileOnly patchouliApiCoordinate
+    localRuntime patchouliRuntimeCoordinate
+
     testImplementation enforcedPlatform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "net.neoforged:testframework:${rootProject.neoforge_version_26_1_2}"
     testRuntimeOnly ftbicCoordinate
+    testRuntimeOnly jeiRuntimeCoordinate
+    testRuntimeOnly jadeCoordinate
+    testRuntimeOnly guideMeRuntimeCoordinate
+    testRuntimeOnly patchouliRuntimeCoordinate
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -70,7 +97,8 @@ tasks.withType(ProcessResources).configureEach {
         minecraft_version_range: rootProject.minecraft_version_range_26_1_2,
         neo_version: rootProject.neoforge_version_26_1_2,
         ftbic_version: rootProject.ftbic_version_26_1_2,
-        core_version: rootProject.core_version
+        core_version: rootProject.core_version,
+        guideme_version: rootProject.guideme_version_26_1_2
     ]
     inputs.properties replaceProperties
     filesMatching('META-INF/neoforge.mods.toml') {
