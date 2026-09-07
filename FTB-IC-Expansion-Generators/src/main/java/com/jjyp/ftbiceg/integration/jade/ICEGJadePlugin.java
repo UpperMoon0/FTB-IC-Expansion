@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -34,7 +35,7 @@ public final class ICEGJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PROVIDER, Block.class);
     }
 
-    private static final class GeneratorProvider implements IServerDataProvider<ICEElectricBlockEntity>, IBlockComponentProvider {
+    private static final class GeneratorProvider implements IServerDataProvider<BlockEntity>, IBlockComponentProvider {
         private static final ResourceLocation UID = new ResourceLocation(FTBICEG.MODID, "generator_status");
         private static final String ENERGY = "ftbiceg_energy";
         private static final String CAPACITY = "ftbiceg_capacity";
@@ -44,18 +45,19 @@ public final class ICEGJadePlugin implements IWailaPlugin {
         private static final String FLUID_CAPACITY = "ftbiceg_fluid_capacity";
 
         @Override
-        public void appendServerData(CompoundTag data, ServerPlayer player, Level level, ICEElectricBlockEntity blockEntity, boolean showDetails) {
-            if (!(blockEntity instanceof AdvancedGeneratorBlockEntity)
-                && !(blockEntity instanceof AdvancedGeothermalGeneratorBlockEntity)) {
+        public void appendServerData(CompoundTag data, ServerPlayer player, Level level, BlockEntity blockEntity, boolean showDetails) {
+            if (!(blockEntity instanceof ICEElectricBlockEntity electric)
+                || (!(electric instanceof AdvancedGeneratorBlockEntity)
+                    && !(electric instanceof AdvancedGeothermalGeneratorBlockEntity))) {
                 return;
             }
 
-            data.putDouble(ENERGY, blockEntity.getEnergy());
-            data.putDouble(CAPACITY, blockEntity.getEnergyCapacity());
-            if (blockEntity instanceof AdvancedGeneratorBlockEntity generator) {
+            data.putDouble(ENERGY, electric.getEnergy());
+            data.putDouble(CAPACITY, electric.getEnergyCapacity());
+            if (electric instanceof AdvancedGeneratorBlockEntity generator) {
                 data.putInt(FUEL, generator.fuelTicks);
                 data.putInt(MAX_FUEL, generator.maxFuelTicks);
-            } else if (blockEntity instanceof AdvancedGeothermalGeneratorBlockEntity geothermal) {
+            } else if (electric instanceof AdvancedGeothermalGeneratorBlockEntity geothermal) {
                 data.putInt(FLUID, geothermal.fluidAmount);
                 data.putInt(FLUID_CAPACITY, geothermal.getTankCapacity());
             }
