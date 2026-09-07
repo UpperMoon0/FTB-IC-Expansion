@@ -20,27 +20,28 @@ import snownee.jade.api.config.IPluginConfig;
 
 @WailaPlugin
 public final class ICEGJadePlugin implements IWailaPlugin {
-    private static final GeneratorProvider PROVIDER = new GeneratorProvider();
+    private static final Identifier UID = Identifier.fromNamespaceAndPath(FTBICEG.MODID, "generator_status");
+    private static final String ENERGY = "ftbiceg_energy";
+    private static final String CAPACITY = "ftbiceg_capacity";
+    private static final String FUEL = "ftbiceg_fuel";
+    private static final String MAX_FUEL = "ftbiceg_max_fuel";
+    private static final String FLUID = "ftbiceg_fluid";
+    private static final String FLUID_CAPACITY = "ftbiceg_fluid_capacity";
+
+    private static final GeneratorDataProvider DATA_PROVIDER = new GeneratorDataProvider();
+    private static final GeneratorComponentProvider COMPONENT_PROVIDER = new GeneratorComponentProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration) {
-        registration.registerBlockDataProvider(PROVIDER, ExpansionGeneratorBlockEntity.class);
+        registration.registerBlockDataProvider(DATA_PROVIDER, ExpansionGeneratorBlockEntity.class);
     }
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
-        registration.registerBlockComponent(PROVIDER, Block.class);
+        registration.registerBlockComponent(COMPONENT_PROVIDER, Block.class);
     }
 
-    private static final class GeneratorProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider {
-        private static final Identifier UID = Identifier.fromNamespaceAndPath(FTBICEG.MODID, "generator_status");
-        private static final String ENERGY = "ftbiceg_energy";
-        private static final String CAPACITY = "ftbiceg_capacity";
-        private static final String FUEL = "ftbiceg_fuel";
-        private static final String MAX_FUEL = "ftbiceg_max_fuel";
-        private static final String FLUID = "ftbiceg_fluid";
-        private static final String FLUID_CAPACITY = "ftbiceg_fluid_capacity";
-
+    private static final class GeneratorDataProvider implements IServerDataProvider<BlockAccessor> {
         @Override
         public Identifier getUid() {
             return UID;
@@ -60,6 +61,13 @@ public final class ICEGJadePlugin implements IWailaPlugin {
                 data.putInt(FLUID, geothermal.getFluidAmount());
                 data.putInt(FLUID_CAPACITY, geothermal.getTankCapacity());
             }
+        }
+    }
+
+    private static final class GeneratorComponentProvider implements IBlockComponentProvider {
+        @Override
+        public Identifier getUid() {
+            return UID;
         }
 
         @Override
