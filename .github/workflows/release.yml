@@ -61,7 +61,7 @@ jobs:
           java-version: '25'
       - name: Verify NeoForge 26.1.2 runtime
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        run: ./gradlew --no-daemon buildModern2612 --stacktrace
+        run: ./gradlew --no-daemon verifyModern2612 --stacktrace
       - name: Publish changed modules to CurseForge
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
         shell: bash
