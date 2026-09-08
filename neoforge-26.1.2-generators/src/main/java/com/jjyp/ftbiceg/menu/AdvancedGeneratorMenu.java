@@ -36,13 +36,13 @@ public final class AdvancedGeneratorMenu extends AbstractContainerMenu {
         this.machine = machine;
         this.data = data;
 
-        addSlot(new Slot(machine, FUEL_SLOT, 62, 46) {
+        addSlot(new Slot(machine, FUEL_SLOT, 62, 44) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return machine.canPlaceItem(FUEL_SLOT, stack);
             }
         });
-        addSlot(new Slot(machine, BATTERY_SLOT, 98, 46) {
+        addSlot(new Slot(machine, BATTERY_SLOT, 98, 44) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return machine.canPlaceItem(BATTERY_SLOT, stack);
