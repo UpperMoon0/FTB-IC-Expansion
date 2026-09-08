@@ -26,6 +26,8 @@ Install the file matching your exact Minecraft version and loader. Files from on
 
 Core is the common support layer for the suite. It provides the registry and machine compatibility infrastructure used by expansion modules.
 
+On NeoForge 26.1.2, the **Large Blast Furnace is intentionally a scaffold**. Its current implementation validates the multiblock structure and reports whether it is formed, but it does not yet process recipes, consume energy, track production progress, or expose a production inventory. Those gameplay systems are deliberately deferred rather than represented as finished functionality.
+
 **Required:**
 
 - FTB Industrial Contraptions
@@ -119,7 +121,7 @@ A full local verification can be started from the root workspace with:
 ./gradlew testAllVersions
 ```
 
-The CI matrix validates shared code, Forge 1.19.2, and NeoForge 26.1.2 independently. The modern lane includes a real Minecraft server bootstrap with FTB Industrial Contraptions, Core, and Generators loaded together.
+The CI matrix validates shared code, Forge 1.19.2, and NeoForge 26.1.2 independently. The modern lane runs the explicit `verifyModern2612` gate, including an ephemeral Minecraft server bootstrap that asserts FTB Industrial Contraptions, Core, and Generators are loaded together.
 
 Version numbers are owned by the root `gradle.properties`. Release notes for each changed module must exist at `changelogs/core/v<version>.md` or `changelogs/generators/v<version>.md`; release automation uses those files for CurseForge and GitHub release notes.
 
