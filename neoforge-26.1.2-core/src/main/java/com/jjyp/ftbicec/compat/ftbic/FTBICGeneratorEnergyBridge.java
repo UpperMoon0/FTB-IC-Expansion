@@ -53,8 +53,18 @@ public final class FTBICGeneratorEnergyBridge {
         this.generator = generator;
     }
 
-    public void pushEnergy() {
+    /**
+     * Mirrors the first stage of FTBIC generator output: direct adjacent FE consumers get priority.
+     */
+    public void pushAdjacentFE() {
         pushFEToNeighbours();
+    }
+
+    /**
+     * Mirrors the final stage of FTBIC generator output after battery charging: distribute through
+     * the Zap/cable network.
+     */
+    public void pushCableNetwork() {
         if (generator.getEnergy() <= 0D) {
             return;
         }
