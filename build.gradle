@@ -20,10 +20,22 @@ tasks.register('buildModern2612') {
     dependsOn ':neoforge-26.1.2-core:build', ':neoforge-26.1.2-generators:build'
 }
 
+tasks.register('runtimeSmokeModern2612') {
+    group = 'verification'
+    description = 'Runs the NeoForge 26.1.2 ephemeral Minecraft server smoke test with FTBIC, Core, and Generators loaded together.'
+    dependsOn ':neoforge-26.1.2-generators:test'
+}
+
+tasks.register('verifyModern2612') {
+    group = 'verification'
+    description = 'Builds NeoForge 26.1.2 and runs its explicit runtime smoke gate.'
+    dependsOn 'buildModern2612', 'runtimeSmokeModern2612'
+}
+
 tasks.register('testAllVersions') {
     group = 'verification'
-    description = 'Runs shared tests and builds every supported Minecraft target.'
-    dependsOn ':common:check', 'buildLegacy1192', 'buildModern2612'
+    description = 'Runs shared tests and verifies every supported Minecraft target.'
+    dependsOn ':common:check', 'buildLegacy1192', 'verifyModern2612'
 }
 
 tasks.register('buildAllVersions') {
