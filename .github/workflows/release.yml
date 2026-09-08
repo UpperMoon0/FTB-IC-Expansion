@@ -106,21 +106,39 @@ jobs:
           if [[ "$publish_modern" == true && "$GENERATORS_CHANGED" == true ]]; then
             upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$generators_modern_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
           fi
-      - name: Create Core GitHub release
+      - name: Create or update Core GitHub release
         if: steps.versions.outputs.core_changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.versions.outputs.core }}
         run: |
+          set -euo pipefail
+          tag="core-v${VERSION}"
+          title="FTB IC Expansion Core v${VERSION}"
+          notes="changelogs/core/v${VERSION}.md"
           files=("FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${VERSION}.jar")
           if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${VERSION}.jar"); fi
-          gh release create "core-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Core v${VERSION}" --notes-file "changelogs/core/v${VERSION}.md"
-      - name: Create Generators GitHub release
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$title" --notes-file "$notes"
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" --title "$title" --notes-file "$notes"
+          fi
+      - name: Create or update Generators GitHub release
         if: steps.versions.outputs.generators_changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.versions.outputs.generators }}
         run: |
+          set -euo pipefail
+          tag="generators-v${VERSION}"
+          title="FTB IC Expansion Generators v${VERSION}"
+          notes="changelogs/generators/v${VERSION}.md"
           files=("FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${VERSION}.jar")
           if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${VERSION}.jar"); fi
-          gh release create "generators-v${VERSION}" "${files[@]}" --title "FTB IC Expansion Generators v${VERSION}" --notes-file "changelogs/generators/v${VERSION}.md"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$title" --notes-file "$notes"
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" --title "$title" --notes-file "$notes"
+          fi
