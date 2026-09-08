@@ -59,7 +59,7 @@ jobs:
       - name: Build and runtime-smoke NeoForge 26.1.2
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon buildModern2612 --stacktrace
+          ./gradlew --no-daemon verifyModern2612 --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: neoforge-26.1.2-jars
