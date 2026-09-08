@@ -258,14 +258,17 @@ public final class FTBICGeneratorEnergyBridge {
             zapFindCaches.put(key, zapCache);
         }
         ZapEnergyHandler zapHandler = zapCache.getCapability();
-        if (zapHandler != null && zapHandler != generator && zapHandler.getMaxInputEnergy() > 0D
-            && !zapHandler.isBurnt() && zapHandler.isValidEnergyInputSide(direction.getOpposite())) {
-            CachedEnergyStorage storage = new CachedEnergyStorage();
-            storage.origin = origin;
-            storage.distance = distance;
-            storage.blockEntity = entity;
-            storage.energyHandler = zapHandler;
-            set.add(storage);
+        if (zapHandler != null && zapHandler != generator) {
+            if (zapHandler.getMaxInputEnergy() > 0D
+                && !zapHandler.isBurnt()
+                && zapHandler.isValidEnergyInputSide(direction.getOpposite())) {
+                CachedEnergyStorage storage = new CachedEnergyStorage();
+                storage.origin = origin;
+                storage.distance = distance;
+                storage.blockEntity = entity;
+                storage.energyHandler = zapHandler;
+                set.add(storage);
+            }
             return;
         }
 
