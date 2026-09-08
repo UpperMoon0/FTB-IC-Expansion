@@ -36,7 +36,7 @@ public final class AdvancedGeothermalGeneratorMenu extends AbstractContainerMenu
         this.machine = machine;
         this.data = data;
 
-        addSlot(new Slot(machine, BATTERY_SLOT, 80, 46) {
+        addSlot(new Slot(machine, BATTERY_SLOT, 62, 17) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return machine.canPlaceItem(BATTERY_SLOT, stack);
