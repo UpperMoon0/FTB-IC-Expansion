@@ -59,8 +59,9 @@ public abstract class ExpansionGeneratorBlockEntity extends BlockEntity implemen
         }
 
         handleGeneration();
+        energyBridge.pushAdjacentFE();
         chargeBattery();
-        energyBridge.pushEnergy();
+        energyBridge.pushCableNetwork();
         updateActiveState();
     }
 
