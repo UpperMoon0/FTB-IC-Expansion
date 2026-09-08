@@ -10,6 +10,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+/**
+ * Structure-validation scaffold for the future Large Blast Furnace implementation.
+ *
+ * <p>This block entity intentionally does not implement recipes, inventories, energy consumption,
+ * progress, or production yet. For the current NeoForge port it only validates the multiblock and
+ * exposes its formed/incomplete state so the remaining gameplay implementation can be added later
+ * without pretending the machine is already functional.</p>
+ */
 public final class LargeBlastFurnaceBlockEntity extends BlockEntity {
     private static final int IGNORE = -1;
     private static final int AIR = 0;
