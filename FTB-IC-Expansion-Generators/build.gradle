@@ -27,25 +27,37 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
             property 'forge.enabledGameTestNamespaces', 'ftbiceg'
-            mods { ftbiceg { source sourceSets.main } }
+            mods {
+                ftbiceg { source sourceSets.main }
+                ftbicec { source project(':core').sourceSets.main }
+            }
         }
         server {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
             property 'forge.enabledGameTestNamespaces', 'ftbiceg'
-            mods { ftbiceg { source sourceSets.main } }
+            mods {
+                ftbiceg { source sourceSets.main }
+                ftbicec { source project(':core').sourceSets.main }
+            }
         }
         gameTestServer {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
             property 'forge.enabledGameTestNamespaces', 'ftbiceg'
-            mods { ftbiceg { source sourceSets.main } }
+            mods {
+                ftbiceg { source sourceSets.main }
+                ftbicec { source project(':core').sourceSets.main }
+            }
         }
         data {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
             args '--mod', 'ftbiceg', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-            mods { ftbiceg { source sourceSets.main } }
+            mods {
+                ftbiceg { source sourceSets.main }
+                ftbicec { source project(':core').sourceSets.main }
+            }
         }
     }
 }
@@ -68,7 +80,7 @@ dependencies {
     implementation fg.deobf('curse.maven:myrtrees-546151:4371268')
     implementation fg.deobf('curse.maven:ftbic-539097:4392862')
     implementation fg.deobf('curse.maven:patchouli-306770:4031402')
-    implementation project(':core')
+    compileOnly project(':core')
 }
 
 tasks.named('processResources', ProcessResources).configure {
