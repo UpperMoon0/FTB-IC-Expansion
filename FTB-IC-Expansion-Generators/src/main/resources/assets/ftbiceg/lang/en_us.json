@@ -1,5 +1,9 @@
 {
   "block.ftbiceg.advanced_generator": "Advanced Generator",
   "block.ftbiceg.advanced_geothermal_generator": "Advanced Geothermal Generator",
-  "itemGroup.ftbiceg": "IC Expansion: Generators"
+  "itemGroup.ftbiceg": "IC Expansion: Generators",
+  "config.jade.plugin_ftbiceg.generator_status": "Generator Status",
+  "ftbiceg.jade.energy": "Energy: %s / %s Zaps",
+  "ftbiceg.jade.fuel": "Fuel: %s / %s ticks",
+  "ftbiceg.jade.lava": "Lava: %s / %s mB"
 }

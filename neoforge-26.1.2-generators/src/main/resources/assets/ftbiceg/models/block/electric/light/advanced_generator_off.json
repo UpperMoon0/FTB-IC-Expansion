@@ -1,0 +1,9 @@
+{
+  "parent": "ftbic:block/orientable_2d",
+  "textures": {
+    "side": "ftbiceg:block/electric/light/advanced_side",
+    "front": "ftbiceg:block/electric/light/advanced_generator_off",
+    "top": "ftbiceg:block/electric/light/advanced_top",
+    "bottom": "ftbiceg:block/electric/light/advanced_bottom"
+  }
+}

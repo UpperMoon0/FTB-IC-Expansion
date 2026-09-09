@@ -3,7 +3,7 @@ loaderVersion="[43,)"
 license="All rights reserved"
 [[mods]]
 modId="ftbicec"
-version="1.0.11"
+version="${mod_version}"
 displayName="Industrial Contraptions Expansion: Core"
 authors="JohnyJohnyYesPapa"
 description='''
@@ -25,16 +25,8 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.ftbicec]]
-modId="patchouli"
-mandatory=true
-versionRange="[1.19.2,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.ftbicec]]
 modId="ftbic"
 mandatory=true
 versionRange="[1900,)"
 ordering="AFTER"
 side="BOTH"
-

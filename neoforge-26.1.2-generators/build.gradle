@@ -1,0 +1,16 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+ext.expansion_mod_id = 'ftbiceg'
+ext.expansion_mod_name = 'FTB IC Expansion Generators'
+ext.expansion_version = rootProject.generators_version
+ext.expansion_archive_name = 'IC-Expansion-Generators'
+ext.expansion_description = 'Generator upgrades for FTB Industrial Contraptions.'
+
+apply from: rootProject.file('gradle/neoforge-26.1.2.gradle')
+
+dependencies {
+    implementation project(':neoforge-26.1.2-core')
+}

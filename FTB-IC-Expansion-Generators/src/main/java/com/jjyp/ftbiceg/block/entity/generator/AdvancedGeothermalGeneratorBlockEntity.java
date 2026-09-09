@@ -1,7 +1,8 @@
 package com.jjyp.ftbiceg.block.entity.generator;
 
-import com.jjyp.ftbiceg.screen.AdvancedGeothermalGeneratorMenu;
 import com.jjyp.ftbiceg.block.entity.ICEGElectricBlocks;
+import com.jjyp.ftbiceg.screen.AdvancedGeothermalGeneratorMenu;
+import dev.ftb.mods.ftbic.FTBICConfig;
 import dev.ftb.mods.ftbic.screen.sync.SyncedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -40,12 +41,13 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
 
     public LazyOptional<?> getTankOptional() {
         if (this.tankOptional == null) {
-            this.tankOptional = LazyOptional.of(() -> {
-                return new AdvancedGeothermalGeneratorTank(this);
-            });
+            this.tankOptional = LazyOptional.of(() -> new AdvancedGeothermalGeneratorTank(this));
         }
-
         return this.tankOptional;
+    }
+
+    public int getTankCapacity() {
+        return AdvancedGeothermalGeneratorTank.FLUID_CAPACITY;
     }
 
     public void invalidateCaps() {
@@ -54,7 +56,6 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
             this.tankOptional.invalidate();
             this.tankOptional = null;
         }
-
     }
 
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
@@ -62,14 +63,21 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
     }
 
     public void handleGeneration() {
-        if (this.energy < this.energyCapacity && this.fluidAmount > 0) {
-            this.energy += Math.min(this.energyCapacity - this.energy, this.maxEnergyOutput);
-            if (this.fluidAmount > 2)
-                this.fluidAmount -= (int) this.maxEnergyOutput / 20;
-            else this.fluidAmount = 0;
-            this.active = true;
+        if (this.energy >= this.energyCapacity || this.fluidAmount <= 0) {
+            return;
         }
 
+        double requested = Math.min(this.maxEnergyOutput, this.energyCapacity - this.energy);
+        double baseOutput = Math.max(0.1D, FTBICConfig.MACHINES.GEOTHERMAL_GENERATOR_OUTPUT.get());
+        int fluidCost = Math.max(1, (int) Math.ceil(requested / baseOutput));
+        fluidCost = Math.min(fluidCost, this.fluidAmount);
+        double produced = Math.min(requested, fluidCost * baseOutput);
+        if (produced > 0.0D) {
+            this.energy += produced;
+            this.fluidAmount -= fluidCost;
+            this.active = true;
+            this.setChanged();
+        }
     }
 
     public InteractionResult rightClick(Player player, InteractionHand hand, BlockHitResult hit) {
@@ -77,7 +85,6 @@ public class AdvancedGeothermalGeneratorBlockEntity extends MVGeneratorBlockEnti
             if (!this.level.isClientSide()) {
                 this.openMenu((ServerPlayer) player, (id, inventory) -> new AdvancedGeothermalGeneratorMenu(id, inventory, this));
             }
-
         }
         return InteractionResult.SUCCESS;
     }

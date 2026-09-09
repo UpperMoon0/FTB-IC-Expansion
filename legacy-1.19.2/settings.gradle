@@ -1,0 +1,13 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+}
+
+rootProject.name = 'ftb-ic-expansion-1.19.2'
+
+include 'core'
+include 'generators'
+project(':core').projectDir = file('../FTB-IC-Expansion-Core')
+project(':generators').projectDir = file('../FTB-IC-Expansion-Generators')

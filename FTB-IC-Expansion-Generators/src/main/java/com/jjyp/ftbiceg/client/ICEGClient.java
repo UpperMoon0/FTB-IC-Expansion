@@ -15,7 +15,9 @@ public class ICEGClient extends FTBICCommon {
     }
 
     private void setup(FMLClientSetupEvent event) {
-        MenuScreens.register(ICEGMenus.ADVANCED_GENERATOR.get(), AdvancedGeneratorScreen::new);
-        MenuScreens.register(ICEGMenus.ADVANCED_GEOTHERMAL_GENERATOR.get(), AdvancedGeothermalGeneratorScreen::new);
+        event.enqueueWork(() -> {
+            MenuScreens.register(ICEGMenus.ADVANCED_GENERATOR.get(), AdvancedGeneratorScreen::new);
+            MenuScreens.register(ICEGMenus.ADVANCED_GEOTHERMAL_GENERATOR.get(), AdvancedGeothermalGeneratorScreen::new);
+        });
     }
 }
