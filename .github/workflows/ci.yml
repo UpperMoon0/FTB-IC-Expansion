@@ -138,7 +138,38 @@ jobs:
         if: steps.nstut-cache.outputs.cache-hit != 'true'
         working-directory: .ci/nstut-lib
         shell: bash
-        run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+
+          max_attempts=4
+          for ((attempt=1; attempt<=max_attempts; attempt++)); do
+            log="$(mktemp)"
+            refresh=()
+            if (( attempt > 1 )); then
+              refresh+=(--refresh-dependencies)
+            fi
+
+            set +e
+            ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace "${refresh[@]}" 2>&1 | tee "$log"
+            status=${PIPESTATUS[0]}
+            set -e
+
+            if (( status == 0 )); then
+              rm -f "$log"
+              break
+            fi
+
+            if ! grep -Eqi 'Network is unreachable|UnknownHostException|No address associated with hostname|Temporary failure in name resolution|Connection reset|Read timed out|Connect timed out|Connection timed out|429|Too Many Requests|502 Bad Gateway|503 Service Unavailable|504 Gateway Timeout' "$log" || (( attempt == max_attempts )); then
+              rm -f "$log"
+              exit "$status"
+            fi
+
+            delay=$((15 * (2 ** (attempt - 1)) + RANDOM % 10))
+            echo "Transient Gradle/plugin network failure while publishing NsTut Lib on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+            rm -f "$log"
+            sleep "$delay"
+          done
       - name: Build and runtime-smoke NeoForge 26.1.2
         shell: bash
         run: |
