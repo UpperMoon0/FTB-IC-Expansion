@@ -29,6 +29,8 @@ jobs:
           value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
           core="$(value core_version)"
           generators="$(value generators_version)"
+          [[ -n "$core" && -n "$generators" ]] || { echo 'Missing release version in gradle.properties' >&2; exit 1; }
+
           core_changed=false
           generators_changed=false
           if [[ -n "${BEFORE_SHA:-}" && ! "$BEFORE_SHA" =~ ^0+$ ]] && git cat-file -e "${BEFORE_SHA}:gradle.properties" 2>/dev/null; then
@@ -36,6 +38,11 @@ jobs:
             previous_generators="$(git show "${BEFORE_SHA}:gradle.properties" | sed -n 's/^generators_version[[:space:]]*=[[:space:]]*//p' | head -n1 | tr -d '\r' | xargs)"
             [[ "$core" != "$previous_core" ]] && core_changed=true
             [[ "$generators" != "$previous_generators" ]] && generators_changed=true
+          else
+            # First release after adopting the root release-version file: both current
+            # module versions are new relative to main and must be published.
+            core_changed=true
+            generators_changed=true
           fi
           printf 'core=%s\ngenerators=%s\ncore_changed=%s\ngenerators_changed=%s\n' "$core" "$generators" "$core_changed" "$generators_changed" >> "$GITHUB_OUTPUT"
       - name: Stop when no release version changed
