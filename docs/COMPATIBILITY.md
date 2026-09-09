@@ -7,9 +7,9 @@ This document defines the player- and pack-facing compatibility contract for FTB
 | Minecraft | Loader | Java | Core | Generators |
 | :--- | :--- | ---: | :--- | :--- |
 | 1.19.2 | Forge 43.2.8 | 17 | Supported | Supported |
-| 26.1.2 | NeoForge 26.1.2.76 | 25 | Supported | Supported |
+| 26.1.2 | NeoForge 26.1.2.99 | 25 | Supported | Supported |
 
-Both mods require FTB Industrial Contraptions. Generators additionally requires IC Expansion: Core.
+Both mods require FTB Industrial Contraptions. Generators additionally requires IC Expansion: Core. On NeoForge 26.1.2, Core also requires NsTut Lib 0.8.1+ within the 0.8.x compatibility line; the current Blast Furnace scaffold still uses its internal validator, with migration to the NsTut Lib multiblock API deferred to a later version.
 
 ## Advanced Generator fuel compatibility
 
