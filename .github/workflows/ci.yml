@@ -38,30 +38,7 @@ jobs:
           set -euo pipefail
           chmod +x legacy-1.19.2/gradlew
 
-          run_with_cursemaven_retry() {
-            local attempt max_attempts=4 status log delay
-            for ((attempt=1; attempt<=max_attempts; attempt++)); do
-              log="$(mktemp)"
-              set +e
-              "$@" 2>&1 | tee "$log"
-              status=${PIPESTATUS[0]}
-              set -e
-              if (( status == 0 )); then
-                rm -f "$log"
-                return 0
-              fi
-              if ! grep -Eqi '429|Too Many Requests' "$log" || (( attempt == max_attempts )); then
-                rm -f "$log"
-                return "$status"
-              fi
-              delay=$((20 * (2 ** (attempt - 1))))
-              echo "CurseMaven rate-limited attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
-              rm -f "$log"
-              sleep "$delay"
-            done
-          }
-
-          run_with_cursemaven_retry ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
+          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
 
       - name: Resolve validated NsTut Lib revision
         id: nstut-ref
@@ -96,30 +73,7 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
 
-          run_with_cursemaven_retry() {
-            local attempt max_attempts=4 status log delay
-            for ((attempt=1; attempt<=max_attempts; attempt++)); do
-              log="$(mktemp)"
-              set +e
-              "$@" 2>&1 | tee "$log"
-              status=${PIPESTATUS[0]}
-              set -e
-              if (( status == 0 )); then
-                rm -f "$log"
-                return 0
-              fi
-              if ! grep -Eqi '429|Too Many Requests' "$log" || (( attempt == max_attempts )); then
-                rm -f "$log"
-                return "$status"
-              fi
-              delay=$((20 * (2 ** (attempt - 1))))
-              echo "CurseMaven rate-limited attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
-              rm -f "$log"
-              sleep "$delay"
-            done
-          }
-
-          run_with_cursemaven_retry ./gradlew --no-daemon verifyModern2612 --stacktrace
+          ./gradlew --no-daemon verifyModern2612 --stacktrace
 
       - name: Stage release artifacts
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

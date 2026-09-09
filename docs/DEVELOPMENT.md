@@ -10,6 +10,13 @@ FTB IC Expansion is a multi-version repository with an isolated legacy Forge wor
 
 The repository contains Gradle wrappers; a separate system Gradle installation is not required.
 
+CurseForge dependencies use the pinned file IDs and filenames in
+`gradle/curseforge-repositories.gradle`. Gradle downloads these JARs directly from
+CurseForge's CDN and caches them normally, without depending on CurseMaven availability.
+When updating a CurseForge dependency, update its entry in that file alongside the
+dependency version/file ID. The existing `curse.maven` coordinates are retained for
+ForgeGradle remapping; no dependency versions are changed by the repository mapping.
+
 ## Full verification
 
 From the repository root:

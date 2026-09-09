@@ -64,12 +64,7 @@ minecraft {
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
 
-repositories {
-    maven {
-        url 'https://www.cursemaven.com'
-        content { includeGroup 'curse.maven' }
-    }
-}
+apply from: file('../gradle/curseforge-repositories.gradle')
 
 dependencies {
     minecraft "net.minecraftforge:forge:${workspaceProperty('minecraft_version_1_19_2', '1.19.2')}-${workspaceProperty('forge_version_1_19_2', '43.2.8')}"
