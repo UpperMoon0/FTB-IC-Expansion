@@ -13,33 +13,101 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  shared-tests:
     # Never execute untrusted fork PR code on our private runner fleet.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Test shared code
+        shell: bash
+        run: ./gradlew --no-daemon :common:check --stacktrace
+
+  forge-1-19-2:
+    # Run in parallel with shared tests to minimize PR wall-clock time.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@v6
-
-      - name: Test shared code
-        shell: bash
-        run: ./gradlew --no-daemon :common:check --stacktrace
-
       - name: Build Forge 1.19.2
         shell: bash
         run: |
           set -euo pipefail
           chmod +x legacy-1.19.2/gradlew
 
-          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
+          run_with_dependency_retry() {
+            local attempt max_attempts=4 status log delay
+            max_attempts=4
+            for ((attempt=1; attempt<=max_attempts; attempt++)); do
+              log="$(mktemp)"
+              set +e
+              "$@" 2>&1 | tee "$log"
+              status=${PIPESTATUS[0]}
+              set -e
+              if (( status == 0 )); then
+                rm -f "$log"
+                return 0
+              fi
 
+              # Exact CurseForge CDN fallbacks can still rate-limit. ForgeGradle
+              # may then surface the failed state as a missing mapped artifact.
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|forgecdn\.net|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+                rm -f "$log"
+                return "$status"
+              fi
+
+              if grep -Eqi '_mapped_(official|named)' "$log"; then
+                rm -rf "$HOME/.gradle/caches/forge_gradle/deobf_dependencies" \
+                       "$HOME/.gradle/caches/forge_gradle/bundled_deobf_repo" || true
+              fi
+
+              delay=$((30 * (2 ** (attempt - 1)) + RANDOM % 15))
+              echo "Transient CurseForge/ForgeGradle dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              rm -f "$log"
+              sleep "$delay"
+            done
+          }
+
+          run_with_dependency_retry ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
+
+      - name: Stage Forge release JARs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
+          core="$(value core_version)"
+          generators="$(value generators_version)"
+          out=.ci/forge-release
+          mkdir -p "$out"
+          cp "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${core}.jar" "$out/"
+          cp "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${generators}.jar" "$out/"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: forge-jars-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 3
+          path: .ci/forge-release/*
+
+  neoforge-26-1-2:
+    # Run in parallel with shared tests to minimize PR wall-clock time.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
       - name: Resolve validated NsTut Lib revision
         id: nstut-ref
         shell: bash
@@ -50,32 +118,60 @@ jobs:
             exit 1
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
+      - name: Restore validated NsTut Lib artifact
+        id: nstut-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/com/nstut/nstutlib
+          key: nstut-lib-m2-${{ runner.os }}-${{ steps.nstut-ref.outputs.ref }}-26.1.2
       - uses: actions/checkout@v6
+        if: steps.nstut-cache.outputs.cache-hit != 'true'
         with:
           repository: UpperMoon0/NsTut-Lib
           ref: ${{ steps.nstut-ref.outputs.ref }}
           path: .ci/nstut-lib
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-
       - name: Publish NsTut Lib 26.1.2 to Maven Local
+        if: steps.nstut-cache.outputs.cache-hit != 'true'
         working-directory: .ci/nstut-lib
         shell: bash
         run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
-
       - name: Build and runtime-smoke NeoForge 26.1.2
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
 
-          ./gradlew --no-daemon verifyModern2612 --stacktrace
+          run_with_dependency_retry() {
+            local attempt max_attempts=4 status log delay
+            max_attempts=4
+            for ((attempt=1; attempt<=max_attempts; attempt++)); do
+              log="$(mktemp)"
+              set +e
+              "$@" 2>&1 | tee "$log"
+              status=${PIPESTATUS[0]}
+              set -e
+              if (( status == 0 )); then
+                rm -f "$log"
+                return 0
+              fi
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|forgecdn\.net|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+                rm -f "$log"
+                return "$status"
+              fi
+              delay=$((30 * (2 ** (attempt - 1)) + RANDOM % 15))
+              echo "Transient CurseForge dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              rm -f "$log"
+              sleep "$delay"
+            done
+          }
 
-      - name: Stage release artifacts
+          run_with_dependency_retry ./gradlew --no-daemon verifyModern2612 --stacktrace
+
+      - name: Stage NeoForge release JARs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
@@ -83,20 +179,34 @@ jobs:
           value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
           core="$(value core_version)"
           generators="$(value generators_version)"
-          publish_modern="$(value publish_26_1_2)"
-          bundle=.ci/release-bundle
-          rm -rf "$bundle"
-          mkdir -p "$bundle"
-
-          cp "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${core}.jar" "$bundle/"
-          cp "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${generators}.jar" "$bundle/"
-          if [[ "$publish_modern" == true ]]; then
-            cp "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${core}.jar" "$bundle/"
-            cp "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${generators}.jar" "$bundle/"
-          fi
+          out=.ci/neoforge-release
+          mkdir -p "$out"
+          cp "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${core}.jar" "$out/"
+          cp "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${generators}.jar" "$out/"
 
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: neoforge-jars-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 3
+          path: .ci/neoforge-release/*
+
+  release-bundle:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [shared-tests, forge-1-19-2, neoforge-26-1-2]
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: forge-jars-${{ github.sha }}
+          path: .ci/release-bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: neoforge-jars-${{ github.sha }}
+          path: .ci/release-bundle
+      - uses: actions/upload-artifact@v4
         with:
           name: release-jars-${{ github.sha }}
           if-no-files-found: error

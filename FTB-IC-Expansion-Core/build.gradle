@@ -51,12 +51,27 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 apply from: file('../gradle/curseforge-repositories.gradle')
 
+repositories {
+    maven {
+        url 'https://maven.ftb.dev/releases'
+        content { includeGroup 'dev.ftb.mods' }
+    }
+    maven {
+        url 'https://maven.architectury.dev'
+        content { includeGroup 'dev.architectury' }
+    }
+    maven {
+        url 'https://maven.blamejared.com'
+        content { includeGroup 'mezz.jei' }
+    }
+}
+
 dependencies {
     minecraft "net.minecraftforge:forge:${workspaceProperty('minecraft_version_1_19_2', '1.19.2')}-${workspaceProperty('forge_version_1_19_2', '43.2.8')}"
-    implementation fg.deobf('curse.maven:ftblib-404465:4500548')
-    implementation fg.deobf('curse.maven:archi-419699:4476084')
-    implementation fg.deobf('curse.maven:ftbic-539097:4392862')
-    implementation fg.deobf('curse.maven:jei-238222:4494410')
+    implementation(fg.deobf('dev.ftb.mods:ftb-library-forge:1902.3.18-build.208', { transitive = false }))
+    implementation(fg.deobf('dev.architectury:architectury-forge:6.5.77', { transitive = false }))
+    implementation(fg.deobf('dev.ftb.mods:ftb-industrial-contraptions:1900.1.7-build.221', { transitive = false }))
+    implementation(fg.deobf('mezz.jei:jei-1.19.2-forge:11.6.0.1015', { transitive = false }))
     implementation fg.deobf('curse.maven:myrtrees-546151:4371268')
     implementation fg.deobf('curse.maven:patchouli-306770:4031402')
 }
