@@ -16,7 +16,7 @@ This repository contains two separately released mods:
 | Minecraft | Loader | Java | FTB Industrial Contraptions | Status |
 | :--- | :--- | ---: | :--- | :--- |
 | 1.19.2 | Forge 43.2.8 | 17 | Legacy 1.19.x line | Supported legacy implementation |
-| 26.1.2 | NeoForge 26.1.2.76 | 25 | 26.1.2.10 | Supported modern implementation |
+| 26.1.2 | NeoForge 26.1.2.99 | 25 | 26.1.2.10 | Supported modern implementation |
 
 Install the file matching your exact Minecraft version and loader. Files from one target are not cross-version or cross-loader artifacts.
 
@@ -30,7 +30,8 @@ On NeoForge 26.1.2, the **Large Blast Furnace is intentionally a scaffold**. Its
 
 **Required:**
 
-- FTB Industrial Contraptions
+- FTB Industrial Contraptions — both supported targets.
+- NsTut Lib 0.8.1+ within the 0.8.x compatibility line — NeoForge 26.1.2 only.
 
 Core does **not** require Patchouli.
 
@@ -121,7 +122,7 @@ A full local verification can be started from the root workspace with:
 ./gradlew testAllVersions
 ```
 
-The CI matrix validates shared code, Forge 1.19.2, and NeoForge 26.1.2 independently. The modern lane runs the explicit `verifyModern2612` gate, including an ephemeral Minecraft server bootstrap that asserts FTB Industrial Contraptions, Core, and Generators are loaded together.
+The CI matrix validates shared code, Forge 1.19.2, and NeoForge 26.1.2 independently. The modern lane runs the explicit `verifyModern2612` gate, including an ephemeral Minecraft server bootstrap that asserts FTB Industrial Contraptions, Core, Generators, and NsTut Lib are loaded together.
 
 Version numbers are owned by the root `gradle.properties`. Release notes for each changed module must exist at `changelogs/core/v<version>.md` or `changelogs/generators/v<version>.md`; release automation uses those files for CurseForge and GitHub release notes.
 
