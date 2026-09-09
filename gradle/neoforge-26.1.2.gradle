@@ -9,8 +9,8 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url = 'https://www.cursemaven.com'
-        content { includeGroup 'curse.maven' }
+        url = 'https://maven.ftb.dev/releases'
+        content { includeGroup 'dev.ftb.mods' }
     }
     maven {
         url = 'https://maven.blamejared.com/'
@@ -18,6 +18,13 @@ repositories {
             includeGroup 'mezz.jei'
             includeGroup 'vazkii.patchouli'
         }
+    }
+    ivy {
+        name = 'CurseForgeJade'
+        url = uri('https://www.curseforge.com/api/v1/mods/324717/files')
+        patternLayout { artifact('[revision]/download') }
+        metadataSources { artifact() }
+        content { includeModule 'curse.maven', 'jade-324717' }
     }
 }
 
@@ -52,7 +59,7 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-def ftbicCoordinate = "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+def ftbicCoordinate = "dev.ftb.mods:ftb-industrial-contraptions:${rootProject.ftbic_version_26_1_2}"
 def nstutLibCoordinate = "com.nstut.nstutlib:nstutlib-neoforge-26.1.2:${rootProject.nstut_lib_version}"
 def jeiApiCoordinate = "mezz.jei:jei-26.1.2-neoforge-api:${rootProject.jei_version_26_1_2}"
 def jeiRuntimeCoordinate = "mezz.jei:jei-26.1.2-neoforge:${rootProject.jei_version_26_1_2}"
@@ -63,8 +70,8 @@ def patchouliApiCoordinate = "vazkii.patchouli:patchouli-neoforge:${rootProject.
 def patchouliRuntimeCoordinate = "vazkii.patchouli:patchouli-neoforge:${rootProject.patchouli_version_26_1_2}"
 
 dependencies {
-    compileOnly ftbicCoordinate
-    localRuntime ftbicCoordinate
+    compileOnly(ftbicCoordinate) { transitive = false }
+    localRuntime(ftbicCoordinate) { transitive = false }
 
     if (project.expansion_mod_id == 'ftbicec') {
         implementation nstutLibCoordinate
@@ -82,7 +89,7 @@ dependencies {
     testImplementation enforcedPlatform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "net.neoforged:testframework:${rootProject.neoforge_version_26_1_2}"
-    testRuntimeOnly ftbicCoordinate
+    testRuntimeOnly(ftbicCoordinate) { transitive = false }
     testRuntimeOnly jeiRuntimeCoordinate
     testRuntimeOnly jadeCoordinate
     testRuntimeOnly guideMeRuntimeCoordinate
