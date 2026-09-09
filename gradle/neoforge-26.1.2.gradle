@@ -5,13 +5,11 @@ base.archivesName = "${project.expansion_archive_name}-neoforge-${rootProject.mi
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+apply from: rootProject.file('gradle/curseforge-repositories.gradle')
+
 repositories {
     mavenLocal()
     mavenCentral()
-    maven {
-        url = 'https://www.cursemaven.com'
-        content { includeGroup 'curse.maven' }
-    }
     maven {
         url = 'https://maven.blamejared.com/'
         content {

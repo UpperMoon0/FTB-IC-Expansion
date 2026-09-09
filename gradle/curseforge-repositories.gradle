@@ -1,0 +1,27 @@
+// Keep the existing CurseMaven coordinates, but resolve the pinned files directly
+// from CurseForge's CDN. CurseMaven 429s otherwise prevent ForgeGradle remapping.
+def curseforgeFiles = [
+    ['ftblib-404465', '4500548', 'ftb-library-forge-1902.3.18-build.208'],
+    ['archi-419699', '4476084', 'architectury-6.5.77-forge'],
+    ['ftbic-539097', '4392862', 'ftb-industrial-contraptions-1900.1.7-build.221'],
+    ['jei-238222', '4494410', 'jei-1.19.2-forge-11.6.0.1015'],
+    ['myrtrees-546151', '4371268', 'myrtrees-forge-1.2.0-build.32'],
+    ['patchouli-306770', '4031402', 'Patchouli-1.19.2-77'],
+    ['jade-324717', '4800904', 'Jade-1.19.1-forge-8.9.1'],
+    ['ftb-industrial-contraptions-forge-539097', '8683232', 'ftb-industrial-contraptions-26.1.2.10'],
+    ['jade-324717', '7817285', 'Jade-mc26.1-NeoForge-26.0.6'],
+]
+
+curseforgeFiles.each { moduleName, fileId, fileName ->
+    def directory = "${fileId.substring(0, fileId.length() - 3)}/${Integer.parseInt(fileId.substring(fileId.length() - 3))}"
+    repositories.ivy {
+        name = "CurseForge-${moduleName}-${fileId}"
+        url = 'https://mediafilez.forgecdn.net/files'
+        patternLayout {
+            artifact "${directory}/${fileName}(-[classifier]).[ext]"
+        }
+        metadataSources { artifact() }
+        // Exact versions keep ForgeGradle's generated mapped artifacts local.
+        content { includeVersion 'curse.maven', moduleName, fileId }
+    }
+}
