@@ -59,9 +59,9 @@ jobs:
                 return 0
               fi
 
-              # Exact CurseForge API fallbacks can still rate-limit. ForgeGradle
+              # Exact CurseForge CDN fallbacks can still rate-limit. ForgeGradle
               # may then surface the failed state as a missing mapped artifact.
-              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|forgecdn\.net|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
                 rm -f "$log"
                 return "$status"
               fi
@@ -158,7 +158,7 @@ jobs:
                 rm -f "$log"
                 return 0
               fi
-              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|forgecdn\.net|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
                 rm -f "$log"
                 return "$status"
               fi

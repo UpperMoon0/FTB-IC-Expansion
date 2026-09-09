@@ -49,6 +49,8 @@ minecraft {
 sourceSets.main.java.srcDir '../common/src/main/java'
 sourceSets.main.resources.srcDir 'src/generated/resources'
 
+apply from: file('../gradle/curseforge-repositories.gradle')
+
 repositories {
     maven {
         url 'https://maven.ftb.dev/releases'
@@ -61,20 +63,6 @@ repositories {
     maven {
         url 'https://maven.blamejared.com'
         content { includeGroup 'mezz.jei' }
-    }
-    ivy {
-        name = 'CurseForgeMyrtrees'
-        url = uri('https://www.curseforge.com/api/v1/mods/546151/files')
-        patternLayout { artifact('[revision]/download') }
-        metadataSources { artifact() }
-        content { includeModule 'curse.maven', 'myrtrees-546151' }
-    }
-    ivy {
-        name = 'CurseForgePatchouli'
-        url = uri('https://www.curseforge.com/api/v1/mods/306770/files')
-        patternLayout { artifact('[revision]/download') }
-        metadataSources { artifact() }
-        content { includeModule 'curse.maven', 'patchouli-306770' }
     }
 }
 

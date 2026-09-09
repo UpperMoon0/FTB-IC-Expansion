@@ -5,6 +5,8 @@ base.archivesName = "${project.expansion_archive_name}-neoforge-${rootProject.mi
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+apply from: rootProject.file('gradle/curseforge-repositories.gradle')
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -18,13 +20,6 @@ repositories {
             includeGroup 'mezz.jei'
             includeGroup 'vazkii.patchouli'
         }
-    }
-    ivy {
-        name = 'CurseForgeJade'
-        url = uri('https://www.curseforge.com/api/v1/mods/324717/files')
-        patternLayout { artifact('[revision]/download') }
-        metadataSources { artifact() }
-        content { includeModule 'curse.maven', 'jade-324717' }
     }
 }
 
