@@ -66,6 +66,27 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      - name: Resolve validated NsTut Lib revision
+        id: nstut-ref
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        shell: bash
+        run: |
+          ref="$(sed -n 's/^nstut_lib_ref=//p' gradle.properties)"
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid nstut_lib_ref in gradle.properties: $ref" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        with:
+          repository: UpperMoon0/NsTut-Lib
+          ref: ${{ steps.nstut-ref.outputs.ref }}
+          path: .ci/nstut-lib
+      - name: Publish NsTut Lib 26.1.2 to Maven Local
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        working-directory: .ci/nstut-lib
+        run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
       - name: Verify NeoForge 26.1.2 runtime
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
         run: ./gradlew --no-daemon verifyModern2612 --stacktrace
@@ -98,7 +119,7 @@ jobs:
           }
           core_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"}]}'
           generators_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
-          core_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"}]}'
+          core_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"nstut-lib","type":"requiredDependency"}]}'
           generators_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"guideme","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
           if [[ "$CORE_CHANGED" == true ]]; then
             upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17' "$core_legacy_relations" "changelogs/core/v${CORE_VERSION}.md"
