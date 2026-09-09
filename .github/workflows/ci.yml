@@ -51,11 +51,29 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
+      - name: Resolve validated NsTut Lib revision
+        id: nstut-ref
+        shell: bash
+        run: |
+          ref="$(sed -n 's/^nstut_lib_ref=//p' gradle.properties)"
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid nstut_lib_ref in gradle.properties: $ref" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: UpperMoon0/NsTut-Lib
+          ref: ${{ steps.nstut-ref.outputs.ref }}
+          path: .ci/nstut-lib
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v6
+      - name: Publish NsTut Lib 26.1.2 to Maven Local
+        working-directory: .ci/nstut-lib
+        run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
       - name: Build and runtime-smoke NeoForge 26.1.2
         run: |
           chmod +x gradlew
