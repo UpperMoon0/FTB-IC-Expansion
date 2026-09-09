@@ -11,9 +11,16 @@ Core provides the common registration and machine compatibility infrastructure u
 
 Install the file that matches your exact Minecraft version and loader.
 
-## Required dependency
+## Required dependencies
+
+### Minecraft 1.19.2
 
 - **FTB Industrial Contraptions**
+
+### Minecraft 26.1.2
+
+- **FTB Industrial Contraptions**
+- **NsTut Lib 0.8.1+ within the 0.8.x compatibility line**
 
 Core itself does **not** require Patchouli. Guide, recipe-viewer, and tooltip integrations belong to the content modules that use them.
 
