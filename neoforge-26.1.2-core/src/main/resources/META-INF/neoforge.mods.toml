@@ -29,3 +29,10 @@ type="required"
 versionRange="[${ftbic_version},)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="nstutlib"
+type="required"
+versionRange="[${nstut_lib_version},0.9)"
+ordering="AFTER"
+side="BOTH"
