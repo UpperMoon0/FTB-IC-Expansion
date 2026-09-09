@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, ci/parallel-cursemaven-retry]
+    branches: [main]
 
 permissions:
   contents: read
@@ -24,13 +24,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
       - name: Test shared code
         shell: bash
         run: ./gradlew --no-daemon :common:check --stacktrace
 
   forge-1-19-2:
-    needs: shared-tests
+    # Run in parallel with shared tests to minimize PR wall-clock time.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
     timeout-minutes: 45
     steps:
@@ -39,7 +39,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
       - name: Build Forge 1.19.2
         shell: bash
         run: |
@@ -60,20 +59,20 @@ jobs:
                 return 0
               fi
 
-              # ForgeGradle often turns the original CurseMaven 429 into a
-              # missing local deobf/mapped artifact on the next invocation.
-              # Treat both forms as the same transient dependency failure.
-              if ! grep -Eqi '429|Too Many Requests|cursemaven\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+              # Exact CurseForge API fallbacks can still rate-limit. ForgeGradle
+              # may then surface the failed state as a missing mapped artifact.
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
                 rm -f "$log"
                 return "$status"
               fi
 
               if grep -Eqi '_mapped_(official|named)' "$log"; then
-                rm -rf "$HOME/.gradle/caches/forge_gradle/deobf_dependencies" || true
+                rm -rf "$HOME/.gradle/caches/forge_gradle/deobf_dependencies" \
+                       "$HOME/.gradle/caches/forge_gradle/bundled_deobf_repo" || true
               fi
 
               delay=$((30 * (2 ** (attempt - 1)) + RANDOM % 15))
-              echo "Transient CurseMaven/ForgeGradle dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              echo "Transient CurseForge/ForgeGradle dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
               rm -f "$log"
               sleep "$delay"
             done
@@ -103,7 +102,8 @@ jobs:
           path: .ci/forge-release/*
 
   neoforge-26-1-2:
-    needs: shared-tests
+    # Run in parallel with shared tests to minimize PR wall-clock time.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
     timeout-minutes: 45
     steps:
@@ -118,7 +118,14 @@ jobs:
             exit 1
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - name: Restore validated NsTut Lib artifact
+        id: nstut-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/com/nstut/nstutlib
+          key: nstut-lib-m2-${{ runner.os }}-${{ steps.nstut-ref.outputs.ref }}-26.1.2
       - uses: actions/checkout@v6
+        if: steps.nstut-cache.outputs.cache-hit != 'true'
         with:
           repository: UpperMoon0/NsTut-Lib
           ref: ${{ steps.nstut-ref.outputs.ref }}
@@ -127,8 +134,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - uses: gradle/actions/setup-gradle@v6
       - name: Publish NsTut Lib 26.1.2 to Maven Local
+        if: steps.nstut-cache.outputs.cache-hit != 'true'
         working-directory: .ci/nstut-lib
         shell: bash
         run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
@@ -151,12 +158,12 @@ jobs:
                 rm -f "$log"
                 return 0
               fi
-              if ! grep -Eqi '429|Too Many Requests|cursemaven\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
+              if ! grep -Eqi '429|Too Many Requests|curseforge\.com|_mapped_(official|named)' "$log" || (( attempt == max_attempts )); then
                 rm -f "$log"
                 return "$status"
               fi
               delay=$((30 * (2 ** (attempt - 1)) + RANDOM % 15))
-              echo "Transient CurseMaven dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              echo "Transient CurseForge dependency failure on attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
               rm -f "$log"
               sleep "$delay"
             done
@@ -187,7 +194,7 @@ jobs:
 
   release-bundle:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [forge-1-19-2, neoforge-26-1-2]
+    needs: [shared-tests, forge-1-19-2, neoforge-26-1-2]
     runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
     timeout-minutes: 10
     steps:
