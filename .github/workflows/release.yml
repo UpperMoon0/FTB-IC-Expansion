@@ -1,11 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
-    paths: [gradle.properties]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -14,82 +15,91 @@ concurrency:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-deploy]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-      - name: Detect release version changes
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+
+      - name: Detect unpublished release versions
         id: versions
         shell: bash
         env:
-          BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
           core="$(value core_version)"
           generators="$(value generators_version)"
+          publish_modern="$(value publish_26_1_2)"
           [[ -n "$core" && -n "$generators" ]] || { echo 'Missing release version in gradle.properties' >&2; exit 1; }
+          [[ "$publish_modern" == true || "$publish_modern" == false ]] || { echo "Invalid publish_26_1_2 value: $publish_modern" >&2; exit 1; }
 
-          core_changed=false
-          generators_changed=false
-          if [[ -n "${BEFORE_SHA:-}" && ! "$BEFORE_SHA" =~ ^0+$ ]] && git cat-file -e "${BEFORE_SHA}:gradle.properties" 2>/dev/null; then
-            previous_core="$(git show "${BEFORE_SHA}:gradle.properties" | sed -n 's/^core_version[[:space:]]*=[[:space:]]*//p' | head -n1 | tr -d '\r' | xargs)"
-            previous_generators="$(git show "${BEFORE_SHA}:gradle.properties" | sed -n 's/^generators_version[[:space:]]*=[[:space:]]*//p' | head -n1 | tr -d '\r' | xargs)"
-            [[ "$core" != "$previous_core" ]] && core_changed=true
-            [[ "$generators" != "$previous_generators" ]] && generators_changed=true
-          else
-            # First release after adopting the root release-version file: both current
-            # module versions are new relative to main and must be published.
-            core_changed=true
-            generators_changed=true
-          fi
-          printf 'core=%s\ngenerators=%s\ncore_changed=%s\ngenerators_changed=%s\n' "$core" "$generators" "$core_changed" "$generators_changed" >> "$GITHUB_OUTPUT"
-      - name: Stop when no release version changed
+          release_exists() {
+            local tag="$1" status
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --header "Authorization: Bearer $GITHUB_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$tag")"
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              *) echo "GitHub release lookup for $tag failed with HTTP $status" >&2; exit 1 ;;
+            esac
+          }
+
+          core_changed=true
+          generators_changed=true
+          release_exists "core-v${core}" && core_changed=false
+          release_exists "generators-v${generators}" && generators_changed=false
+
+          printf 'core=%s\ngenerators=%s\npublish_modern=%s\ncore_changed=%s\ngenerators_changed=%s\n' \
+            "$core" "$generators" "$publish_modern" "$core_changed" "$generators_changed" >> "$GITHUB_OUTPUT"
+
+      - name: Stop when everything is already published
         if: steps.versions.outputs.core_changed != 'true' && steps.versions.outputs.generators_changed != 'true'
-        run: echo 'No release version changed; nothing to publish.'
-      - uses: actions/setup-java@v5
+        run: echo 'Current module versions already have GitHub releases; nothing to publish.'
+
+      - uses: actions/download-artifact@v4
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
         with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-      - name: Verify shared code and Forge 1.19.2
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        run: |
-          chmod +x gradlew legacy-1.19.2/gradlew
-          ./gradlew --no-daemon :common:check --stacktrace
-          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
-      - uses: actions/setup-java@v5
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        with:
-          distribution: temurin
-          java-version: '25'
-      - name: Resolve validated NsTut Lib revision
-        id: nstut-ref
+          name: release-jars-${{ github.event.workflow_run.head_sha }}
+          path: .ci/release-bundle
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Verify validated release artifacts
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
         shell: bash
+        env:
+          CORE_CHANGED: ${{ steps.versions.outputs.core_changed }}
+          GENERATORS_CHANGED: ${{ steps.versions.outputs.generators_changed }}
+          CORE_VERSION: ${{ steps.versions.outputs.core }}
+          GENERATORS_VERSION: ${{ steps.versions.outputs.generators }}
+          PUBLISH_MODERN: ${{ steps.versions.outputs.publish_modern }}
         run: |
-          ref="$(sed -n 's/^nstut_lib_ref=//p' gradle.properties)"
-          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Invalid nstut_lib_ref in gradle.properties: $ref" >&2
-            exit 1
+          set -euo pipefail
+          bundle=.ci/release-bundle
+          if [[ "$CORE_CHANGED" == true ]]; then
+            test -f "$bundle/IC-Expansion-Core-${CORE_VERSION}.jar"
+            if [[ "$PUBLISH_MODERN" == true ]]; then
+              test -f "$bundle/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar"
+            fi
           fi
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        with:
-          repository: UpperMoon0/NsTut-Lib
-          ref: ${{ steps.nstut-ref.outputs.ref }}
-          path: .ci/nstut-lib
-      - name: Publish NsTut Lib 26.1.2 to Maven Local
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        working-directory: .ci/nstut-lib
-        run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
-      - name: Verify NeoForge 26.1.2 runtime
-        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
-        run: ./gradlew --no-daemon verifyModern2612 --stacktrace
+          if [[ "$GENERATORS_CHANGED" == true ]]; then
+            test -f "$bundle/IC-Expansion-Generators-${GENERATORS_VERSION}.jar"
+            if [[ "$PUBLISH_MODERN" == true ]]; then
+              test -f "$bundle/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar"
+            fi
+          fi
+
       - name: Publish changed modules to CurseForge
         if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
         shell: bash
@@ -99,74 +109,145 @@ jobs:
           GENERATORS_CHANGED: ${{ steps.versions.outputs.generators_changed }}
           CORE_VERSION: ${{ steps.versions.outputs.core }}
           GENERATORS_VERSION: ${{ steps.versions.outputs.generators }}
+          PUBLISH_MODERN: ${{ steps.versions.outputs.publish_modern }}
         run: |
           set -euo pipefail
           [[ -n "${CURSEFORGE_API_TOKEN:-}" ]] || { echo 'Missing CURSEFORGE_API_TOKEN' >&2; exit 1; }
-          available="$(curl --fail-with-body --silent --show-error --header "X-Api-Token: $CURSEFORGE_API_TOKEN" https://minecraft.curseforge.com/api/game/versions)"
+          available="$(curl --fail-with-body --silent --show-error --retry 5 --retry-all-errors --retry-delay 3 --retry-max-time 120 \
+            --header "X-Api-Token: $CURSEFORGE_API_TOKEN" https://minecraft.curseforge.com/api/game/versions)"
+
           upload() {
             local project_id="$1" display="$2" jar="$3" mc="$4" loader="$5" java="$6" relations="$7" changelog_file="$8"
             [[ -f "$jar" ]] || { echo "Missing release JAR: $jar" >&2; exit 1; }
             [[ -f "$changelog_file" ]] || { echo "Missing release changelog: $changelog_file" >&2; exit 1; }
             local tags changelog metadata response_file status response
             tags="$(jq -cn --arg mc "$mc" --arg loader "$loader" --arg java "$java" '[$mc,$loader,$java,"Client","Server"]')"
-            while IFS= read -r tag; do jq -e --arg tag "$tag" 'any(.[]; .name == $tag)' <<< "$available" >/dev/null || { echo "Unknown CurseForge tag: $tag" >&2; exit 1; }; done < <(jq -r '.[]' <<< "$tags")
+            while IFS= read -r tag; do
+              jq -e --arg tag "$tag" 'any(.[]; .name == $tag)' <<< "$available" >/dev/null || { echo "Unknown CurseForge tag: $tag" >&2; exit 1; }
+            done < <(jq -r '.[]' <<< "$tags")
             changelog="$(cat "$changelog_file")"
             metadata="$(jq -cn --arg name "$display" --arg changelog "$changelog" --argjson tags "$tags" --argjson relations "$relations" '{changelog:$changelog,changelogType:"markdown",displayName:$name,gameVersionNames:$tags,releaseType:"release",relations:$relations}')"
             response_file="$(mktemp)"
-            status="$(curl --silent --show-error --retry 4 --retry-max-time 90 --output "$response_file" --write-out '%{http_code}' --request POST --header "X-Api-Token: $CURSEFORGE_API_TOKEN" --form-string "metadata=$metadata" --form "file=@$jar" "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file")"
-            response="$(cat "$response_file")"; rm -f "$response_file"
-            if [[ "$status" =~ ^2 ]]; then echo "Published $jar"; elif grep -Eqi 'already|duplicate' <<< "$response"; then echo "Already published: $jar"; else echo "CurseForge upload failed ($status): $response" >&2; exit 1; fi
+            status="$(curl --silent --show-error --retry 5 --retry-all-errors --retry-delay 3 --retry-max-time 120 \
+              --output "$response_file" --write-out '%{http_code}' --request POST \
+              --header "X-Api-Token: $CURSEFORGE_API_TOKEN" --form-string "metadata=$metadata" --form "file=@$jar" \
+              "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file")"
+            response="$(cat "$response_file")"
+            rm -f "$response_file"
+            if [[ "$status" =~ ^2 ]]; then
+              echo "Published $jar"
+            elif grep -Eqi 'already|duplicate' <<< "$response"; then
+              echo "Already published: $jar"
+            else
+              echo "CurseForge upload failed ($status): $response" >&2
+              exit 1
+            fi
           }
+
+          bundle=.ci/release-bundle
           core_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"}]}'
           generators_legacy_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
           core_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"nstut-lib","type":"requiredDependency"}]}'
           generators_modern_relations='{"projects":[{"slug":"ftb-industrial-contraptions-forge","type":"requiredDependency"},{"slug":"industrial-contraptions-expansion-core","type":"requiredDependency"},{"slug":"jei","type":"optionalDependency"},{"slug":"jade","type":"optionalDependency"},{"slug":"guideme","type":"optionalDependency"},{"slug":"patchouli","type":"optionalDependency"}]}'
+
           if [[ "$CORE_CHANGED" == true ]]; then
-            upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17' "$core_legacy_relations" "changelogs/core/v${CORE_VERSION}.md"
+            upload 857669 "ICEC ${CORE_VERSION} for MC 1.19.2" "$bundle/IC-Expansion-Core-${CORE_VERSION}.jar" 1.19.2 Forge 'Java 17' "$core_legacy_relations" "changelogs/core/v${CORE_VERSION}.md"
           fi
           if [[ "$GENERATORS_CHANGED" == true ]]; then
-            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 1.19.2" "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${GENERATORS_VERSION}.jar" 1.19.2 Forge 'Java 17' "$generators_legacy_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 1.19.2" "$bundle/IC-Expansion-Generators-${GENERATORS_VERSION}.jar" 1.19.2 Forge 'Java 17' "$generators_legacy_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
           fi
-          publish_modern="$(sed -n 's/^publish_26_1_2[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n1 | tr -d '\r' | xargs)"
-          if [[ "$publish_modern" == true && "$CORE_CHANGED" == true ]]; then
-            upload 857669 "ICEC ${CORE_VERSION} for MC 26.1.2" "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$core_modern_relations" "changelogs/core/v${CORE_VERSION}.md"
+          if [[ "$PUBLISH_MODERN" == true && "$CORE_CHANGED" == true ]]; then
+            upload 857669 "ICEC ${CORE_VERSION} for MC 26.1.2" "$bundle/IC-Expansion-Core-neoforge-26.1.2-${CORE_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$core_modern_relations" "changelogs/core/v${CORE_VERSION}.md"
           fi
-          if [[ "$publish_modern" == true && "$GENERATORS_CHANGED" == true ]]; then
-            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$generators_modern_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
+          if [[ "$PUBLISH_MODERN" == true && "$GENERATORS_CHANGED" == true ]]; then
+            upload 857250 "ICEG ${GENERATORS_VERSION} for MC 26.1.2" "$bundle/IC-Expansion-Generators-neoforge-26.1.2-${GENERATORS_VERSION}.jar" 26.1.2 NeoForge 'Java 25' "$generators_modern_relations" "changelogs/generators/v${GENERATORS_VERSION}.md"
           fi
-      - name: Create or update Core GitHub release
-        if: steps.versions.outputs.core_changed == 'true'
+
+      - name: Create or update GitHub releases
+        if: steps.versions.outputs.core_changed == 'true' || steps.versions.outputs.generators_changed == 'true'
+        uses: actions/github-script@v8
         env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.versions.outputs.core }}
-        run: |
-          set -euo pipefail
-          tag="core-v${VERSION}"
-          title="FTB IC Expansion Core v${VERSION}"
-          notes="changelogs/core/v${VERSION}.md"
-          files=("FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${VERSION}.jar")
-          if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${VERSION}.jar"); fi
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$title" --notes-file "$notes"
-            gh release upload "$tag" "${files[@]}" --clobber
-          else
-            gh release create "$tag" "${files[@]}" --title "$title" --notes-file "$notes"
-          fi
-      - name: Create or update Generators GitHub release
-        if: steps.versions.outputs.generators_changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.versions.outputs.generators }}
-        run: |
-          set -euo pipefail
-          tag="generators-v${VERSION}"
-          title="FTB IC Expansion Generators v${VERSION}"
-          notes="changelogs/generators/v${VERSION}.md"
-          files=("FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${VERSION}.jar")
-          if grep -q '^publish_26_1_2=true$' gradle.properties; then files+=("neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${VERSION}.jar"); fi
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$title" --notes-file "$notes"
-            gh release upload "$tag" "${files[@]}" --clobber
-          else
-            gh release create "$tag" "${files[@]}" --title "$title" --notes-file "$notes"
-          fi
+          CORE_CHANGED: ${{ steps.versions.outputs.core_changed }}
+          GENERATORS_CHANGED: ${{ steps.versions.outputs.generators_changed }}
+          CORE_VERSION: ${{ steps.versions.outputs.core }}
+          GENERATORS_VERSION: ${{ steps.versions.outputs.generators }}
+          PUBLISH_MODERN: ${{ steps.versions.outputs.publish_modern }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { owner, repo } = context.repo;
+            const bundle = '.ci/release-bundle';
+
+            async function upsertRelease(tag, title, notesFile, assetPaths) {
+              const body = fs.readFileSync(notesFile, 'utf8');
+              let release;
+              try {
+                release = (await github.rest.repos.getReleaseByTag({ owner, repo, tag })).data;
+                release = (await github.rest.repos.updateRelease({
+                  owner,
+                  repo,
+                  release_id: release.id,
+                  tag_name: tag,
+                  target_commitish: process.env.TARGET_SHA,
+                  name: title,
+                  body,
+                  draft: false,
+                  prerelease: false,
+                })).data;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                release = (await github.rest.repos.createRelease({
+                  owner,
+                  repo,
+                  tag_name: tag,
+                  target_commitish: process.env.TARGET_SHA,
+                  name: title,
+                  body,
+                  draft: false,
+                  prerelease: false,
+                })).data;
+              }
+
+              release = (await github.rest.repos.getRelease({ owner, repo, release_id: release.id })).data;
+              for (const assetPath of assetPaths) {
+                if (!fs.existsSync(assetPath)) throw new Error(`Missing release asset: ${assetPath}`);
+                const name = path.basename(assetPath);
+                const existing = release.assets.find(asset => asset.name === name);
+                if (existing) {
+                  await github.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: existing.id });
+                }
+                const data = fs.readFileSync(assetPath);
+                await github.rest.repos.uploadReleaseAsset({
+                  owner,
+                  repo,
+                  release_id: release.id,
+                  name,
+                  data,
+                  headers: {
+                    'content-type': 'application/java-archive',
+                    'content-length': data.length,
+                  },
+                });
+              }
+            }
+
+            if (process.env.CORE_CHANGED === 'true') {
+              const version = process.env.CORE_VERSION;
+              const assets = [`${bundle}/IC-Expansion-Core-${version}.jar`];
+              if (process.env.PUBLISH_MODERN === 'true') {
+                assets.push(`${bundle}/IC-Expansion-Core-neoforge-26.1.2-${version}.jar`);
+              }
+              await upsertRelease(`core-v${version}`, `FTB IC Expansion Core v${version}`, `changelogs/core/v${version}.md`, assets);
+            }
+
+            if (process.env.GENERATORS_CHANGED === 'true') {
+              const version = process.env.GENERATORS_VERSION;
+              const assets = [`${bundle}/IC-Expansion-Generators-${version}.jar`];
+              if (process.env.PUBLISH_MODERN === 'true') {
+                assets.push(`${bundle}/IC-Expansion-Generators-neoforge-26.1.2-${version}.jar`);
+              }
+              await upsertRelease(`generators-v${version}`, `FTB IC Expansion Generators v${version}`, `changelogs/generators/v${version}.md`, assets);
+            }

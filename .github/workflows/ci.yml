@@ -13,44 +13,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  shared-tests:
-    runs-on: ubuntu-latest
+  validate:
+    # Never execute untrusted fork PR code on our private runner fleet.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v6
+
       - name: Test shared code
+        shell: bash
         run: ./gradlew --no-daemon :common:check --stacktrace
 
-  forge-1-19-2:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
       - name: Build Forge 1.19.2
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x legacy-1.19.2/gradlew
-          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
-      - uses: actions/upload-artifact@v4
-        with:
-          name: forge-1.19.2-jars
-          if-no-files-found: error
-          path: |
-            FTB-IC-Expansion-Core/build/libs/*.jar
-            FTB-IC-Expansion-Generators/build/libs/*.jar
 
-  neoforge-26-1-2:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
+          run_with_cursemaven_retry() {
+            local attempt max_attempts=4 status log delay
+            for ((attempt=1; attempt<=max_attempts; attempt++)); do
+              log="$(mktemp)"
+              set +e
+              "$@" 2>&1 | tee "$log"
+              status=${PIPESTATUS[0]}
+              set -e
+              if (( status == 0 )); then
+                rm -f "$log"
+                return 0
+              fi
+              if ! grep -Eqi '429|Too Many Requests' "$log" || (( attempt == max_attempts )); then
+                rm -f "$log"
+                return "$status"
+              fi
+              delay=$((20 * (2 ** (attempt - 1))))
+              echo "CurseMaven rate-limited attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              rm -f "$log"
+              sleep "$delay"
+            done
+          }
+
+          run_with_cursemaven_retry ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
+
       - name: Resolve validated NsTut Lib revision
         id: nstut-ref
         shell: bash
@@ -61,27 +73,78 @@ jobs:
             exit 1
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v6
         with:
           repository: UpperMoon0/NsTut-Lib
           ref: ${{ steps.nstut-ref.outputs.ref }}
           path: .ci/nstut-lib
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
-      - uses: gradle/actions/setup-gradle@v6
+
       - name: Publish NsTut Lib 26.1.2 to Maven Local
         working-directory: .ci/nstut-lib
+        shell: bash
         run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
+
       - name: Build and runtime-smoke NeoForge 26.1.2
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon verifyModern2612 --stacktrace
+
+          run_with_cursemaven_retry() {
+            local attempt max_attempts=4 status log delay
+            for ((attempt=1; attempt<=max_attempts; attempt++)); do
+              log="$(mktemp)"
+              set +e
+              "$@" 2>&1 | tee "$log"
+              status=${PIPESTATUS[0]}
+              set -e
+              if (( status == 0 )); then
+                rm -f "$log"
+                return 0
+              fi
+              if ! grep -Eqi '429|Too Many Requests' "$log" || (( attempt == max_attempts )); then
+                rm -f "$log"
+                return "$status"
+              fi
+              delay=$((20 * (2 ** (attempt - 1))))
+              echo "CurseMaven rate-limited attempt ${attempt}/${max_attempts}; retrying in ${delay}s..." >&2
+              rm -f "$log"
+              sleep "$delay"
+            done
+          }
+
+          run_with_cursemaven_retry ./gradlew --no-daemon verifyModern2612 --stacktrace
+
+      - name: Stage release artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          value() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" gradle.properties | head -n1 | tr -d '\r' | xargs; }
+          core="$(value core_version)"
+          generators="$(value generators_version)"
+          publish_modern="$(value publish_26_1_2)"
+          bundle=.ci/release-bundle
+          rm -rf "$bundle"
+          mkdir -p "$bundle"
+
+          cp "FTB-IC-Expansion-Core/build/libs/IC-Expansion-Core-${core}.jar" "$bundle/"
+          cp "FTB-IC-Expansion-Generators/build/libs/IC-Expansion-Generators-${generators}.jar" "$bundle/"
+          if [[ "$publish_modern" == true ]]; then
+            cp "neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${core}.jar" "$bundle/"
+            cp "neoforge-26.1.2-generators/build/libs/IC-Expansion-Generators-neoforge-26.1.2-${generators}.jar" "$bundle/"
+          fi
+
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          name: neoforge-26.1.2-jars
+          name: release-jars-${{ github.sha }}
           if-no-files-found: error
-          path: |
-            neoforge-26.1.2-core/build/libs/*.jar
-            neoforge-26.1.2-generators/build/libs/*.jar
+          retention-days: 3
+          path: .ci/release-bundle/*
