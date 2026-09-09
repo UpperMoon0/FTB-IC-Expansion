@@ -25,7 +25,6 @@ public final class AdvancedGeothermalGeneratorScreen extends FtbicGeneratorScree
     @Override
     protected void extractMachineOverlays(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         drawSlot(graphics, this.leftPos + 61, this.topPos + 16);
-        drawSlot(graphics, this.leftPos + 61, this.topPos + 52);
         drawLavaTank(
             graphics,
             this.leftPos + 97,
