@@ -19,6 +19,10 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 minecraft {
     mappings channel: 'official', version: workspaceProperty('minecraft_version_1_19_2', '1.19.2')
     runs {
+        all {
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+        }
         client {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
