@@ -6,6 +6,7 @@ base.archivesName = "${project.expansion_archive_name}-neoforge-${rootProject.mi
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url = 'https://www.cursemaven.com'
@@ -52,6 +53,7 @@ configurations {
 }
 
 def ftbicCoordinate = "curse.maven:ftb-industrial-contraptions-forge-${rootProject.ftbic_curse_project}:${rootProject.ftbic_curse_file_26_1_2}"
+def nstutLibCoordinate = "com.nstut.nstutlib:nstutlib-neoforge-26.1.2:${rootProject.nstut_lib_version}"
 def jeiApiCoordinate = "mezz.jei:jei-26.1.2-neoforge-api:${rootProject.jei_version_26_1_2}"
 def jeiRuntimeCoordinate = "mezz.jei:jei-26.1.2-neoforge:${rootProject.jei_version_26_1_2}"
 def jadeCoordinate = "curse.maven:jade-324717:${rootProject.jade_curse_file_26_1_2}"
@@ -63,6 +65,10 @@ def patchouliRuntimeCoordinate = "vazkii.patchouli:patchouli-neoforge:${rootProj
 dependencies {
     compileOnly ftbicCoordinate
     localRuntime ftbicCoordinate
+
+    if (project.expansion_mod_id == 'ftbicec') {
+        implementation nstutLibCoordinate
+    }
 
     compileOnly jeiApiCoordinate
     localRuntime jeiRuntimeCoordinate
@@ -97,6 +103,7 @@ tasks.withType(ProcessResources).configureEach {
         minecraft_version_range: rootProject.minecraft_version_range_26_1_2,
         neo_version: rootProject.neoforge_version_26_1_2,
         ftbic_version: rootProject.ftbic_version_26_1_2,
+        nstut_lib_version: rootProject.nstut_lib_version,
         core_version: rootProject.core_version,
         guideme_version: rootProject.guideme_version_26_1_2
     ]
