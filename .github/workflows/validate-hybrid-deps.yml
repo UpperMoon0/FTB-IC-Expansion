@@ -1,0 +1,61 @@
+name: Validate Hybrid Dependencies
+
+on:
+  push:
+    branches: [ci/parallel-cursemaven-retry]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-hybrid-deps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  forge-1-19-2:
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build Forge 1.19.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x legacy-1.19.2/gradlew
+          ./legacy-1.19.2/gradlew --no-daemon -p legacy-1.19.2 build --stacktrace
+
+  neoforge-26-1-2:
+    runs-on: [self-hosted, linux, x64, nstut-linux-pool, nstut-profile-standard]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: Resolve validated NsTut Lib revision
+        id: nstut-ref
+        shell: bash
+        run: |
+          ref="$(sed -n 's/^nstut_lib_ref=//p' gradle.properties)"
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid nstut_lib_ref in gradle.properties: $ref" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: UpperMoon0/NsTut-Lib
+          ref: ${{ steps.nstut-ref.outputs.ref }}
+          path: .ci/nstut-lib
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Publish NsTut Lib 26.1.2 to Maven Local
+        working-directory: .ci/nstut-lib
+        shell: bash
+        run: ./gradlew :neoforge-26.1.2:publishToMavenLocal --no-daemon --stacktrace
+      - name: Build and runtime-smoke NeoForge 26.1.2
+        shell: bash
+        run: ./gradlew --no-daemon verifyModern2612 --stacktrace
