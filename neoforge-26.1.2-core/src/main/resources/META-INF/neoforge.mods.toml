@@ -33,6 +33,6 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="nstutlib"
 type="required"
-versionRange="[${nstut_lib_version},0.9)"
+versionRange="[${nstut_lib_version},)"
 ordering="AFTER"
 side="BOTH"

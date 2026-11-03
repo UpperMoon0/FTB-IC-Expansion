@@ -173,6 +173,30 @@ jobs:
 
           run_with_dependency_retry ./gradlew --no-daemon verifyModern2612 --stacktrace
 
+      - name: Verify packaged Core dependency metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          core_version="$(sed -n 's/^core_version=//p' gradle.properties | tr -d '\r')"
+          jar="neoforge-26.1.2-core/build/libs/IC-Expansion-Core-neoforge-26.1.2-${core_version}.jar"
+          test -s "$jar"
+          python3 - "$jar" <<'PY'
+          import sys
+          import tomllib
+          import zipfile
+
+          with zipfile.ZipFile(sys.argv[1]) as artifact:
+              metadata = tomllib.loads(artifact.read("META-INF/neoforge.mods.toml").decode("utf-8"))
+
+          dependencies = metadata["dependencies"]["ftbicec"]
+          nstut = [dep for dep in dependencies if dep["modId"] == "nstutlib"]
+          assert len(nstut) == 1, f"Expected one NsTut-Lib dependency, got {len(nstut)}"
+          assert nstut[0]["versionRange"] == "[0.8.1,)", nstut[0]
+          assert nstut[0]["type"] == "required", nstut[0]
+          assert nstut[0]["side"] == "BOTH", nstut[0]
+          print("Verified packaged Core: NsTut-Lib >= 0.8.1, no upper cap, required on both sides")
+          PY
+
       - name: Stage NeoForge release JARs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
