@@ -31,7 +31,7 @@ On NeoForge 26.1.2, the **Large Blast Furnace is intentionally a scaffold**. Its
 **Required:**
 
 - FTB Industrial Contraptions — both supported targets.
-- NsTut Lib 0.8.1+ within the 0.8.x compatibility line — NeoForge 26.1.2 only.
+- NsTut Lib 0.8.1 or newer — NeoForge 26.1.2 only. This is a minimum-only loader requirement; newer releases require API compatibility validation.
 
 Core does **not** require Patchouli.
 
